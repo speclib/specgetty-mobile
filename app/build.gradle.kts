@@ -32,6 +32,7 @@ private val corePackages = listOf(
     "io.github.mipmip.specgettyondroid.index",
     "io.github.mipmip.specgettyondroid.capture",
     "io.github.mipmip.specgettyondroid.project",
+    "io.github.mipmip.specgettyondroid.index",
 )
 
 android {

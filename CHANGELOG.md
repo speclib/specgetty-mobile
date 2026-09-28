@@ -28,3 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the totals, so the boxes drawn and the number beside them cannot disagree.
 - The project loader, walking `openspec/` into its specs, its active and
   archived changes, their artifacts, their workflow schemas and their progress.
+- The project index: counts, grouping, archive ordering, and search. Typing
+  matches change names loosely; a leading `:` searches the text inside a change
+  instead and says which files it found the words in.
