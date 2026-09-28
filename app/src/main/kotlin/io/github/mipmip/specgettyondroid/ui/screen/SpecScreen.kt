@@ -33,6 +33,7 @@ import io.github.mipmip.specgettyondroid.spec.NodeKind
 import io.github.mipmip.specgettyondroid.spec.PartKind
 import io.github.mipmip.specgettyondroid.spec.SpecNode
 import io.github.mipmip.specgettyondroid.spec.SpecProblem
+import io.github.mipmip.specgettyondroid.ui.ListDetail
 import io.github.mipmip.specgettyondroid.ui.MarkdownText
 import io.github.mipmip.specgettyondroid.viewmodel.SpecScreenState
 import io.github.mipmip.specgettyondroid.viewmodel.SpecViewModel
@@ -44,14 +45,6 @@ fun SpecScreen(viewModel: SpecViewModel, onBack: () -> Unit) {
     val selected by viewModel.selected.collectAsStateWithLifecycle()
     val showingRaw by viewModel.showingRaw.collectAsStateWithLifecycle()
     val rawText by viewModel.rawText.collectAsStateWithLifecycle()
-
-    // The card is a level of its own, so back returns to the outline first.
-    BackHandler(enabled = selected != null || showingRaw) {
-        when {
-            showingRaw -> viewModel.showRaw(false)
-            else -> viewModel.clearSelection()
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -75,24 +68,33 @@ fun SpecScreen(viewModel: SpecViewModel, onBack: () -> Unit) {
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (showingRaw) {
+                // Its own level: back returns to the report rather than leaving
+                // the spec, whatever the window's width.
+                BackHandler(enabled = true) { viewModel.showRaw(false) }
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
                     MarkdownText(rawText, Modifier.fillMaxWidth())
                 }
                 return@Column
             }
 
-            val node = selected
-            if (node != null) {
-                NodeDetail(node)
-                return@Column
-            }
+            ListDetail(
+                hasSelection = selected != null,
+                onClearSelection = viewModel::clearSelection,
+                onLeave = onBack,
+                emptyDetailMessage = "Choose a requirement or a scenario from the outline.",
+                list = {
+                    when (val s = state) {
+                        SpecScreenState.Loading -> Centred("Loading")
+                        is SpecScreenState.Unreadable -> Centred(s.reason)
+                        is SpecScreenState.Report ->
+                            ProblemReport(s.problems) { viewModel.showRaw(true) }
 
-            when (val s = state) {
-                SpecScreenState.Loading -> Centred("Loading")
-                is SpecScreenState.Unreadable -> Centred(s.reason)
-                is SpecScreenState.Report -> ProblemReport(s.problems) { viewModel.showRaw(true) }
-                is SpecScreenState.Outline -> SpecOutline(s.nodes) { viewModel.select(it) }
-            }
+                        is SpecScreenState.Outline ->
+                            SpecOutline(s.nodes) { viewModel.select(it) }
+                    }
+                },
+                detail = { selected?.let { NodeDetail(it) } },
+            )
         }
     }
 }

@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-em4u
 title: Adaptive list-detail layout
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-adaptive-list-detail
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T21:39:23Z
 parent: specgetty-mobile-mryq
 blocked_by:
     - specgetty-mobile-zg3i

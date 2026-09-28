@@ -12,6 +12,7 @@ the POM each artifact publishes, not from memory:
 |---|---|
 | `androidx.*` (activity, annotation, appcompat, arch.core, autofill, collection, compose.*, concurrent, core, cursoradapter, customview, drawerlayout, emoji2, exifinterface, fragment, graphics, interpolator, lifecycle, loader, media3, navigation, navigationevent, profileinstaller, savedstate, startup, tracing, vectordrawable, versionedparcelable, viewpager, window) | Apache-2.0 |
 | `androidx.camera`, `androidx.camera.viewfinder`, `androidx.camera.featurecombinationquery` | Apache-2.0, with BSD-3-Clause on part of `camera` |
+| `androidx.compose.material3.adaptive` | Apache-2.0 |
 | `androidx.datastore` | Apache-2.0, with BSD-3-Clause on part |
 | `org.jetbrains`, `org.jetbrains.kotlin`, `org.jetbrains.kotlinx` | Apache-2.0 |
 | `org.eclipse.jgit` | Eclipse Distribution License 1.0 (BSD-3-Clause) |

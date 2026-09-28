@@ -54,3 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is cloned until you press Add. An access token is never taken from a capture.
 - An F-Droid readiness audit, Fastlane store metadata, and a README covering
   what the app is, how to build and install it, and how to add a repository.
+- On a wide screen the outline of a spec or a delta sits beside the card instead
+  of above it, and the back action means what each arrangement makes it mean.

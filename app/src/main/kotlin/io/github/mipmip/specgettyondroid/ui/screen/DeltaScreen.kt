@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mipmip.specgettyondroid.spec.DiffMark
+import io.github.mipmip.specgettyondroid.ui.ListDetail
 import io.github.mipmip.specgettyondroid.spec.NodeKind
 import io.github.mipmip.specgettyondroid.spec.PartKind
 import io.github.mipmip.specgettyondroid.spec.SpecNode
@@ -67,14 +68,20 @@ fun DeltaScreen(viewModel: DeltaViewModel, onBack: () -> Unit) {
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            val node = selected
-            if (node != null) {
-                NodeCard(viewModel, node)
-            } else if (sections.isEmpty()) {
-                CentredMessage("This change touches no capability.")
-            } else {
-                Outline(viewModel, sections)
-            }
+            ListDetail(
+                hasSelection = selected != null,
+                onClearSelection = viewModel::clearSelection,
+                onLeave = onBack,
+                emptyDetailMessage = "Choose a requirement or a scenario from the outline.",
+                list = {
+                    if (sections.isEmpty()) {
+                        CentredMessage("This change touches no capability.")
+                    } else {
+                        Outline(viewModel, sections)
+                    }
+                },
+                detail = { selected?.let { NodeCard(viewModel, it) } },
+            )
         }
     }
 }
