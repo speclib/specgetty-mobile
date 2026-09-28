@@ -49,3 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The spec screen: an outline of a capability's Purpose, requirements and
   scenarios, with a card for each. A file that does not fit the grammar opens to
   every reason why, with its line, and stays readable as Markdown.
+- A repository URL can be scanned from a QR code or shared in from another app
+  instead of typed. Either way it lands in the add form, editable, and nothing
+  is cloned until you press Add. An access token is never taken from a capture.

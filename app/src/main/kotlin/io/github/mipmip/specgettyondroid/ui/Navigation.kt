@@ -1,6 +1,8 @@
 package io.github.mipmip.specgettyondroid.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -15,6 +17,7 @@ import io.github.mipmip.specgettyondroid.ui.screen.ChangeScreen
 import io.github.mipmip.specgettyondroid.ui.screen.DeltaScreen
 import io.github.mipmip.specgettyondroid.ui.screen.ProjectScreen
 import io.github.mipmip.specgettyondroid.ui.screen.RepoListScreen
+import io.github.mipmip.specgettyondroid.ui.screen.ScannerScreen
 import io.github.mipmip.specgettyondroid.ui.screen.SpecScreen
 import io.github.mipmip.specgettyondroid.viewmodel.ChangeViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.DeltaViewModel
@@ -23,16 +26,48 @@ import io.github.mipmip.specgettyondroid.viewmodel.RepoListViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.SpecViewModel
 
 @Composable
-fun SpecgettyNavHost(projects: ProjectRepository) {
+fun SpecgettyNavHost(
+    projects: ProjectRepository,
+    sharedText: String? = null,
+    onSharedTextHandled: () -> Unit = {},
+) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = Destinations.REPO_LIST) {
         composable(Destinations.REPO_LIST) {
             val model: RepoListViewModel =
                 viewModel(factory = RepoListViewModel.factory(projects))
+
+            // A share fills the add form and clones nothing, which is the same
+            // path a scan takes.
+            LaunchedEffect(sharedText) {
+                sharedText?.let {
+                    model.capture(it)
+                    onSharedTextHandled()
+                }
+            }
+
             RepoListScreen(
                 viewModel = model,
                 onOpenRepo = { navController.navigate(Destinations.project(it)) },
+                onScan = { navController.navigate(Destinations.SCANNER) },
+            )
+        }
+
+        composable(Destinations.SCANNER) { entry ->
+            // Keyed on this entry: the scanner shares the repository list's view
+            // model so a scanned URL lands in the form the list already owns.
+            val parent = remember(entry) {
+                navController.getBackStackEntry(Destinations.REPO_LIST)
+            }
+            val model: RepoListViewModel =
+                viewModel(viewModelStoreOwner = parent, factory = RepoListViewModel.factory(projects))
+            ScannerScreen(
+                onResult = {
+                    model.openForm(it)
+                    navController.popBackStack()
+                },
+                onDismiss = { navController.popBackStack() },
             )
         }
 

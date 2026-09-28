@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,6 +50,7 @@ import io.github.mipmip.specgettyondroid.viewmodel.RepoRow
 fun RepoListScreen(
     viewModel: RepoListViewModel,
     onOpenRepo: (String) -> Unit,
+    onScan: () -> Unit = {},
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
     val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
@@ -96,7 +98,7 @@ fun RepoListScreen(
     }
 
     if (formOpen) {
-        AddRepoSheet(viewModel)
+        AddRepoSheet(viewModel, onScan)
     }
 
     pendingRemoval?.let { id ->
@@ -207,7 +209,7 @@ private fun Statistics(counts: ProjectCounts) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddRepoSheet(viewModel: RepoListViewModel) {
+private fun AddRepoSheet(viewModel: RepoListViewModel, onScan: () -> Unit) {
     val form by viewModel.form.collectAsStateWithLifecycle()
 
     ModalBottomSheet(onDismissRequest = viewModel::closeForm) {
@@ -255,10 +257,22 @@ private fun AddRepoSheet(viewModel: RepoListViewModel) {
 
             Row(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = viewModel::closeForm) { Text("Cancel") }
-                TextButton(onClick = viewModel::submit, enabled = !form.busy) { Text("Add") }
+                TextButton(
+                    onClick = {
+                        viewModel.closeForm()
+                        onScan()
+                    },
+                ) {
+                    Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                    Text("  Scan a code")
+                }
+                Row {
+                    TextButton(onClick = viewModel::closeForm) { Text("Cancel") }
+                    TextButton(onClick = viewModel::submit, enabled = !form.busy) { Text("Add") }
+                }
             }
         }
     }

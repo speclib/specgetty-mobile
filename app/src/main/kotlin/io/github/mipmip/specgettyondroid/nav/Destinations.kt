@@ -12,6 +12,8 @@ object Destinations {
 
     const val REPO_LIST = "repos"
 
+    const val SCANNER = "scanner"
+
     const val PROJECT_ARG_REPO = "repoId"
     const val PROJECT_PATTERN = "project/{$PROJECT_ARG_REPO}"
 

@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-acg7
 title: 03 Repo URL capture
-status: in-progress
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-qr-scanning-and-share-into
 type: milestone
 priority: normal
 created_at: 2026-09-28T19:47:14Z
-updated_at: 2026-09-28T20:16:55Z
+updated_at: 2026-09-28T21:33:18Z
 ---
 
 Getting a URL into the app without typing it: scan, share, paste.
