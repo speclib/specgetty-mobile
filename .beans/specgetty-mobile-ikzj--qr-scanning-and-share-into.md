@@ -5,10 +5,10 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:14Z
-updated_at: 2026-09-28T19:47:14Z
+updated_at: 2026-09-28T20:16:33Z
 parent: specgetty-mobile-acg7
 blocked_by:
-    - specgetty-mobile-y7rx
+    - specgetty-mobile-7swq
 ---
 
 Three transports, one pipeline, and nothing acted on until the person confirms.

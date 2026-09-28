@@ -5,10 +5,10 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:14Z
-updated_at: 2026-09-28T19:47:14Z
+updated_at: 2026-09-28T20:16:33Z
 parent: specgetty-mobile-8swu
 blocked_by:
-    - specgetty-mobile-ikzj
+    - specgetty-mobile-y7rx
 ---
 
 spec/SpecParser. spec.md to an outline of Purpose, requirements and scenarios.

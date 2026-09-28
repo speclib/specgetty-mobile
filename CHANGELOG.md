@@ -18,3 +18,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   project in it.
 - A repository list that survives a restart, with access tokens encrypted under
   an Android Keystore key and kept apart from the list itself.
+- URL capture: a repository address is found in whatever text it arrives in, and
+  a forge page URL is turned into one that actually clones.

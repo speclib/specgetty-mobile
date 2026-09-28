@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-y7rx
 title: URL extraction and normalisation
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-url-extraction-and-normalisation
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:14Z
-updated_at: 2026-09-28T19:47:14Z
+updated_at: 2026-09-28T20:18:45Z
 parent: specgetty-mobile-acg7
 blocked_by:
     - specgetty-mobile-wvxc

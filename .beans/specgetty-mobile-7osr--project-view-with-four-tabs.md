@@ -5,10 +5,10 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T20:16:33Z
 parent: specgetty-mobile-qofc
 blocked_by:
-    - specgetty-mobile-7swq
+    - specgetty-mobile-ikzj
 ---
 
 Screen 2 of BRIEFING.md.

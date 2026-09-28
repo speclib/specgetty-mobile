@@ -1,10 +1,11 @@
 ---
 # specgetty-mobile-acg7
 title: 03 Repo URL capture
-status: todo
+status: in-progress
 type: milestone
+priority: normal
 created_at: 2026-09-28T19:47:14Z
-updated_at: 2026-09-28T19:47:14Z
+updated_at: 2026-09-28T20:16:55Z
 ---
 
 Getting a URL into the app without typing it: scan, share, paste.
