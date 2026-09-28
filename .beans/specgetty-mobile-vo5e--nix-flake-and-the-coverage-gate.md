@@ -1,11 +1,11 @@
 ---
 # specgetty-mobile-vo5e
 title: Nix flake and the coverage gate
-status: todo
+status: in-progress
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:14Z
-updated_at: 2026-09-28T19:47:14Z
+updated_at: 2026-09-28T19:58:29Z
 parent: specgetty-mobile-k5kk
 blocked_by:
     - specgetty-mobile-e5xj

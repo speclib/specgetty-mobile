@@ -10,3 +10,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Project scaffolding: OpenSpec, beans, the nix flake and the ship script.
+- An Android application that builds and installs, showing an empty repository
+  list. Nothing can be added to it yet.
