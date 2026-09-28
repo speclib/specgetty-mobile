@@ -22,6 +22,8 @@ private val coverageExclusions = listOf(
     "io/github/mipmip/specgettyondroid/SpecgettyApplication*",
     "io/github/mipmip/specgettyondroid/repo/AndroidGit*",
     "io/github/mipmip/specgettyondroid/repo/AndroidSystemReader*",
+    "io/github/mipmip/specgettyondroid/store/KeystoreTokenVault*",
+    "io/github/mipmip/specgettyondroid/store/RepoRegistryKt*",
 )
 
 private val corePackages = listOf(
@@ -98,6 +100,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.jgit)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

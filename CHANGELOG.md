@@ -16,3 +16,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   over HTTPS with an optional access token. Failures say whether they were an
   authentication problem, a network problem, or a repository with no OpenSpec
   project in it.
+- A repository list that survives a restart, with access tokens encrypted under
+  an Android Keystore key and kept apart from the list itself.
