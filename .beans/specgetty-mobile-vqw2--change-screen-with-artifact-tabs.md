@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-vqw2
 title: Change screen with artifact tabs
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-change-screen
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T21:19:56Z
 parent: specgetty-mobile-v0ko
 blocked_by:
     - specgetty-mobile-7osr

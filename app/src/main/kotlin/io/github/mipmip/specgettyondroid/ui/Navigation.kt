@@ -11,9 +11,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import io.github.mipmip.specgettyondroid.data.ProjectRepository
 import io.github.mipmip.specgettyondroid.nav.Destinations
+import io.github.mipmip.specgettyondroid.ui.screen.ChangeScreen
 import io.github.mipmip.specgettyondroid.ui.screen.NotBuiltYetScreen
 import io.github.mipmip.specgettyondroid.ui.screen.ProjectScreen
 import io.github.mipmip.specgettyondroid.ui.screen.RepoListScreen
+import io.github.mipmip.specgettyondroid.viewmodel.ChangeViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.ProjectViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.RepoListViewModel
 
@@ -62,12 +64,34 @@ fun SpecgettyNavHost(projects: ProjectRepository) {
                 navArgument(Destinations.CHANGE_ARG_NAME) { type = NavType.StringType },
             ),
         ) { entry ->
+            val repoId = Destinations.decode(
+                entry.arguments?.getString(Destinations.CHANGE_ARG_REPO).orEmpty(),
+            )
             val name = Destinations.decode(
                 entry.arguments?.getString(Destinations.CHANGE_ARG_NAME).orEmpty(),
             )
+            val model: ChangeViewModel =
+                viewModel(factory = ChangeViewModel.factory(projects, repoId, name))
+            ChangeScreen(
+                viewModel = model,
+                onBack = { navController.popBackStack() },
+                onOpenDelta = { navController.navigate(Destinations.delta(repoId, name)) },
+            )
+        }
+
+        composable(
+            route = Destinations.DELTA_PATTERN,
+            arguments = listOf(
+                navArgument(Destinations.DELTA_ARG_REPO) { type = NavType.StringType },
+                navArgument(Destinations.DELTA_ARG_NAME) { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val name = Destinations.decode(
+                entry.arguments?.getString(Destinations.DELTA_ARG_NAME).orEmpty(),
+            )
             NotBuiltYetScreen(
                 title = name,
-                what = "Reading a change arrives with milestone 07.",
+                what = "Comparing a change's spec deltas arrives next.",
                 onBack = { navController.popBackStack() },
             )
         }

@@ -40,3 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The project view: a header with the project's size over four tabs. Overview,
   Changes with its search, Specs, and Properties showing `project.md` or the
   configuration and the workflow schemas the changes use.
+- The change screen: a tab per artifact file the change actually has, rendered
+  as Markdown, a tasks tab drawing each checkbox as a box beside the progress,
+  and a Specs tab listing the capabilities the change touches.
