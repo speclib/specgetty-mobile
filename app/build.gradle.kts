@@ -34,6 +34,7 @@ private val corePackages = listOf(
     "io.github.mipmip.specgettyondroid.project",
     "io.github.mipmip.specgettyondroid.index",
     "io.github.mipmip.specgettyondroid.data",
+    "io.github.mipmip.specgettyondroid.viewmodel",
 )
 
 android {
@@ -106,9 +107,14 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.snakeyaml)
+    implementation(libs.markwon.core)
+    implementation(libs.markwon.tables)
+    implementation(libs.markwon.strikethrough)
+    implementation(libs.markwon.tasklist)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.lifecycle.runtime.testing)
     testImplementation(libs.jgit)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))

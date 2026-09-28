@@ -34,3 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - App state: adding, refreshing, removing and switching repositories, with
   loading, empty and error states kept apart. A repository with no OpenSpec
   project in it says so rather than looking like a failure.
+- The repository list screen: add a repository by its HTTPS URL with an optional
+  access token, see its specs, changes and task progress at a glance, pull to
+  refresh, and remove one after confirming.

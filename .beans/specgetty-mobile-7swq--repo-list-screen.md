@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-7swq
 title: Repo list screen
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-repo-list-screen
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T21:10:23Z
 parent: specgetty-mobile-qofc
 blocked_by:
     - specgetty-mobile-9zzg

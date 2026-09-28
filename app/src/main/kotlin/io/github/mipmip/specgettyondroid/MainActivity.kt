@@ -12,9 +12,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val projects = (application as SpecgettyApplication).projects
         setContent {
             SpecgettyTheme {
-                SpecgettyNavHost()
+                SpecgettyNavHost(projects)
             }
         }
     }

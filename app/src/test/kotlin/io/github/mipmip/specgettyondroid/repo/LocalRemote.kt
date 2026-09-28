@@ -4,7 +4,7 @@ import org.eclipse.jgit.api.Git
 import java.io.File
 
 /** A real git repository on disk, served over `file://`, built with JGit itself. */
-class LocalRemote(private val dir: File) {
+class LocalRemote(val dir: File) {
 
     val url: String get() = dir.toURI().toString()
 
