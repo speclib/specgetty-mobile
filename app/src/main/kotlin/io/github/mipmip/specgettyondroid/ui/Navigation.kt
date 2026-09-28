@@ -13,13 +13,14 @@ import io.github.mipmip.specgettyondroid.data.ProjectRepository
 import io.github.mipmip.specgettyondroid.nav.Destinations
 import io.github.mipmip.specgettyondroid.ui.screen.ChangeScreen
 import io.github.mipmip.specgettyondroid.ui.screen.DeltaScreen
-import io.github.mipmip.specgettyondroid.ui.screen.NotBuiltYetScreen
 import io.github.mipmip.specgettyondroid.ui.screen.ProjectScreen
 import io.github.mipmip.specgettyondroid.ui.screen.RepoListScreen
+import io.github.mipmip.specgettyondroid.ui.screen.SpecScreen
 import io.github.mipmip.specgettyondroid.viewmodel.ChangeViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.DeltaViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.ProjectViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.RepoListViewModel
+import io.github.mipmip.specgettyondroid.viewmodel.SpecViewModel
 
 @Composable
 fun SpecgettyNavHost(projects: ProjectRepository) {
@@ -106,14 +107,15 @@ fun SpecgettyNavHost(projects: ProjectRepository) {
                 navArgument(Destinations.SPEC_ARG_CAPABILITY) { type = NavType.StringType },
             ),
         ) { entry ->
+            val repoId = Destinations.decode(
+                entry.arguments?.getString(Destinations.SPEC_ARG_REPO).orEmpty(),
+            )
             val capability = Destinations.decode(
                 entry.arguments?.getString(Destinations.SPEC_ARG_CAPABILITY).orEmpty(),
             )
-            NotBuiltYetScreen(
-                title = capability,
-                what = "Reading a spec arrives with milestone 08.",
-                onBack = { navController.popBackStack() },
-            )
+            val model: SpecViewModel =
+                viewModel(factory = SpecViewModel.factory(projects, repoId, capability))
+            SpecScreen(viewModel = model, onBack = { navController.popBackStack() })
         }
     }
 }

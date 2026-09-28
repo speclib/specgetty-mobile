@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-zg3i
 title: Spec detail outline and cards
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-spec-detail-screen
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T21:28:28Z
 parent: specgetty-mobile-mryq
 blocked_by:
     - specgetty-mobile-v6en

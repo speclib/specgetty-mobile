@@ -46,3 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The spec delta view: every requirement a change adds, modifies, removes or
   renames, and for a change not yet archived, the difference between a modified
   requirement and the one it modifies.
+- The spec screen: an outline of a capability's Purpose, requirements and
+  scenarios, with a card for each. A file that does not fit the grammar opens to
+  every reason why, with its line, and stays readable as Markdown.
