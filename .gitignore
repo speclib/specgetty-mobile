@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+local.properties
+captures/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.kotlin/
+
+# Nix and direnv
+result
+result-*
+.direnv/
+
+# Emulator
+.avd/
