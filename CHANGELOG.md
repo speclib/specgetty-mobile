@@ -20,3 +20,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   an Android Keystore key and kept apart from the list itself.
 - URL capture: a repository address is found in whatever text it arrives in, and
   a forge page URL is turned into one that actually clones.
+- The spec parser, reading a `spec.md` by the rules OpenSpec's own parser uses.
+  A file that does not fit them says every reason why, with the line for each.

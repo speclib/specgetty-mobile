@@ -1,10 +1,11 @@
 ---
 # specgetty-mobile-8swu
 title: 04 Parsers
-status: todo
+status: in-progress
 type: milestone
+priority: normal
 created_at: 2026-09-28T19:47:14Z
-updated_at: 2026-09-28T19:47:14Z
+updated_at: 2026-09-28T20:21:12Z
 ---
 
 The only code that knows the OpenSpec grammar.
