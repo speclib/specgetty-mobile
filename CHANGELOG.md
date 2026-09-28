@@ -56,3 +56,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   what the app is, how to build and install it, and how to add a repository.
 - On a wide screen the outline of a spec or a delta sits beside the card instead
   of above it, and the back action means what each arrangement makes it mean.
+- End-to-end tests on an API 26 emulator covering adding a repository, browsing
+  its changes, opening a spec delta's difference, and reading a spec.

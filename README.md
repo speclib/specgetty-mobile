@@ -104,6 +104,16 @@ The coverage floor is 70 percent over the bundle and 80 percent on the parser,
 index and capture packages. `scripts/ship-change.sh` runs the gate before it
 archives anything, so a change that fails it is never half-shipped.
 
+The instrumented tests are not in the gate, because they need an emulator and a
+gate that runs on every change should not. Run them before a release:
+
+```bash
+nix develop .#emulator --command ./scripts/e2e.sh
+```
+
+That starts an API 26 emulator if one of ours is not already up, runs the suite
+against it, and stops only an emulator it started.
+
 ## How it is built
 
 The grammar is not invented here. specgetty's `openspec/specs/` defines it,

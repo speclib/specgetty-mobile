@@ -229,14 +229,18 @@ private fun AddRepoSheet(viewModel: RepoListViewModel, onScan: () -> Unit) {
                     keyboardType = KeyboardType.Uri,
                     imeAction = ImeAction.Next,
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = "Repository URL" },
             )
             OutlinedTextField(
                 value = form.label,
                 onValueChange = viewModel::onLabelChanged,
                 label = { Text("Name (optional)") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = "Repository name" },
             )
             OutlinedTextField(
                 value = form.token,
@@ -248,7 +252,9 @@ private fun AddRepoSheet(viewModel: RepoListViewModel, onScan: () -> Unit) {
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done,
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = "Access token" },
             )
 
             form.error?.let {
@@ -271,7 +277,15 @@ private fun AddRepoSheet(viewModel: RepoListViewModel, onScan: () -> Unit) {
                 }
                 Row {
                     TextButton(onClick = viewModel::closeForm) { Text("Cancel") }
-                    TextButton(onClick = viewModel::submit, enabled = !form.busy) { Text("Add") }
+                    TextButton(
+                        onClick = viewModel::submit,
+                        enabled = !form.busy,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Confirm adding the repository"
+                        },
+                    ) {
+                        Text("Add")
+                    }
                 }
             }
         }

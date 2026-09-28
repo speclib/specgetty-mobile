@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-2b6s
 title: Instrumented end to end tests
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-instrumented-end-to-end-tests
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T21:10:47Z
+updated_at: 2026-09-28T21:50:19Z
 parent: specgetty-mobile-pddz
 blocked_by:
     - specgetty-mobile-ikzj
