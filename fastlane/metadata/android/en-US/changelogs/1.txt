@@ -1,0 +1,7 @@
+First release.
+
+Read OpenSpec projects from git repositories on a phone: the specs, the changes
+active and archived, their tasks, and what each change does to the
+specifications. Add a repository by URL, by QR code, or by sharing a link in.
+
+This version reads only. Editing arrives later.

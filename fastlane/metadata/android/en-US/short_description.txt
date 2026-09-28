@@ -1,0 +1,1 @@
+Read the OpenSpec specifications in your git repositories

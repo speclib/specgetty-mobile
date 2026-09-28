@@ -52,3 +52,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A repository URL can be scanned from a QR code or shared in from another app
   instead of typed. Either way it lands in the add form, editable, and nothing
   is cloned until you press Add. An access token is never taken from a capture.
+- An F-Droid readiness audit, Fastlane store metadata, and a README covering
+  what the app is, how to build and install it, and how to add a repository.

@@ -1,14 +1,13 @@
 ---
 # specgetty-mobile-03ra
 title: F-Droid readiness and README
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-fdroid-readiness-and-readme
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T21:36:49Z
 parent: specgetty-mobile-pddz
-blocked_by:
-    - specgetty-mobile-nrao
 ---
 
 Hard requirements from BRIEFING.md.

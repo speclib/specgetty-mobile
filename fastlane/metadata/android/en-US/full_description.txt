@@ -1,0 +1,31 @@
+Specgetty on Droid reads OpenSpec projects that live in git repositories.
+
+OpenSpec keeps a project's specifications in an openspec/ directory: the current
+specs under specs/, the work in progress under changes/, and everything already
+done under changes/archive/. This app clones a repository over HTTPS and lets
+you read all of it on a phone.
+
+What you can do:
+
+* Add a repository by its HTTPS clone URL, by scanning a QR code, or by sharing
+  a link into the app from a browser. A private repository takes a personal
+  access token, which is encrypted with a key held in the Android Keystore.
+* See at a glance how large a project is: how many specs, how many changes are
+  active, how many are archived, and how far the open tasks have got.
+* Browse the changes, active and archived, and search them. Typing matches
+  change names loosely. A leading colon searches the text inside each change and
+  tells you which files it found the words in.
+* Read a change: every artifact file it has, rendered as Markdown, with its task
+  list and its progress.
+* Read what a change does to the specifications: every requirement it adds,
+  modifies, removes or renames, and for a change not yet archived, the
+  difference between a modified requirement and the one it modifies.
+* Read a specification as the structure it already has: its purpose, its
+  requirements and their scenarios. A file that does not fit the OpenSpec
+  grammar still opens, says every reason why, and stays readable.
+
+This version reads. It does not edit, tick tasks, archive, commit or push.
+
+It is the mobile counterpart of specgetty, the OpenSpec terminal browser.
+
+This app is not affiliated with the OpenSpec project.
