@@ -26,3 +26,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   MODIFIED, REMOVED or RENAMED, and reporting what archiving would not apply.
 - The task parser, counting a change's checkboxes by the same rule that decides
   the totals, so the boxes drawn and the number beside them cannot disagree.
+- The project loader, walking `openspec/` into its specs, its active and
+  archived changes, their artifacts, their workflow schemas and their progress.

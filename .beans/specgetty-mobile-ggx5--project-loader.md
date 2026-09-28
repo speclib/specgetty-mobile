@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-ggx5
 title: Project loader
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-project-loader
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T20:36:53Z
 parent: specgetty-mobile-61i0
 blocked_by:
     - specgetty-mobile-2fuj

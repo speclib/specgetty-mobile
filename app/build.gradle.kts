@@ -31,6 +31,7 @@ private val corePackages = listOf(
     "io.github.mipmip.specgettyondroid.tasks",
     "io.github.mipmip.specgettyondroid.index",
     "io.github.mipmip.specgettyondroid.capture",
+    "io.github.mipmip.specgettyondroid.project",
 )
 
 android {
@@ -102,6 +103,7 @@ dependencies {
     implementation(libs.jgit)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.snakeyaml)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
