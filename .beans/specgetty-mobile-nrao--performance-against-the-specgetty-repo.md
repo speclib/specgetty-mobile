@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-nrao
 title: Performance against the specgetty repo
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-performance-against-the-corpus
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T21:41:51Z
 parent: specgetty-mobile-pddz
 blocked_by:
     - specgetty-mobile-2b6s
