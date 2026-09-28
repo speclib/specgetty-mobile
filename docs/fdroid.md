@@ -107,6 +107,19 @@ No dependency jars, no `.so` files and no prebuilt AARs are committed.
 
 MIT. `LICENSE` is at the repository root.
 
+## Screenshots
+
+The five in `fastlane/metadata/android/en-US/images/phoneScreenshots/` were
+taken by driving the app on an API 26 emulator, not composed by hand. Retake
+them with:
+
+```bash
+nix develop .#emulator --command ./scripts/screenshots.sh
+```
+
+The project they show is written by the test that takes them. Somebody else's
+specifications are not this project's to publish.
+
 ## Not affiliated
 
 The README and the F-Droid full description both state that this app is not

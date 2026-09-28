@@ -58,3 +58,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of above it, and the back action means what each arrangement makes it mean.
 - End-to-end tests on an API 26 emulator covering adding a repository, browsing
   its changes, opening a spec delta's difference, and reading a spec.
+- Store screenshots, taken by driving the app on an emulator rather than drawn.
