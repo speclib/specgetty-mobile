@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-9zzg
 title: Project repository and state
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-project-repository-and-state
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T19:47:15Z
+updated_at: 2026-09-28T20:49:30Z
 parent: specgetty-mobile-61i0
 blocked_by:
     - specgetty-mobile-hqy0

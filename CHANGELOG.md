@@ -31,3 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The project index: counts, grouping, archive ordering, and search. Typing
   matches change names loosely; a leading `:` searches the text inside a change
   instead and says which files it found the words in.
+- App state: adding, refreshing, removing and switching repositories, with
+  loading, empty and error states kept apart. A repository with no OpenSpec
+  project in it says so rather than looking like a failure.

@@ -31,6 +31,16 @@ class LocalRemote(private val dir: File) {
         return this
     }
 
+    fun initEmptyProject(): LocalRemote {
+        dir.mkdirs()
+        Git.init().setDirectory(dir).setInitialBranch("main").call().use { git ->
+            write("openspec/.keep", "")
+            git.add().addFilepattern(".").call()
+            git.commit().setMessage("an empty project").setSign(false).call()
+        }
+        return this
+    }
+
     fun commit(path: String, content: String, message: String) {
         Git.open(dir).use { git ->
             write(path, content)
