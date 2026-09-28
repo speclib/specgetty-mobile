@@ -40,7 +40,7 @@ data class SearchResult(
  *   reason the matchers are separated.
  */
 class ProjectIndex(
-    private val project: ProjectInfo,
+    val project: ProjectInfo,
     private val readText: (File) -> String? = { runCatching { it.readText() }.getOrNull() },
 ) {
 

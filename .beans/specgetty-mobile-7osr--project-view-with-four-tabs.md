@@ -1,14 +1,13 @@
 ---
 # specgetty-mobile-7osr
 title: Project view with four tabs
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-project-view-with-tabs
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:15Z
-updated_at: 2026-09-28T20:16:33Z
+updated_at: 2026-09-28T21:15:56Z
 parent: specgetty-mobile-qofc
-blocked_by:
-    - specgetty-mobile-ikzj
 ---
 
 Screen 2 of BRIEFING.md.

@@ -37,3 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The repository list screen: add a repository by its HTTPS URL with an optional
   access token, see its specs, changes and task progress at a glance, pull to
   refresh, and remove one after confirming.
+- The project view: a header with the project's size over four tabs. Overview,
+  Changes with its search, Specs, and Properties showing `project.md` or the
+  configuration and the workflow schemas the changes use.
