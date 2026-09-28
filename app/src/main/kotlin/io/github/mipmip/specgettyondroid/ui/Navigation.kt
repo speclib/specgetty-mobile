@@ -12,10 +12,12 @@ import androidx.navigation.navArgument
 import io.github.mipmip.specgettyondroid.data.ProjectRepository
 import io.github.mipmip.specgettyondroid.nav.Destinations
 import io.github.mipmip.specgettyondroid.ui.screen.ChangeScreen
+import io.github.mipmip.specgettyondroid.ui.screen.DeltaScreen
 import io.github.mipmip.specgettyondroid.ui.screen.NotBuiltYetScreen
 import io.github.mipmip.specgettyondroid.ui.screen.ProjectScreen
 import io.github.mipmip.specgettyondroid.ui.screen.RepoListScreen
 import io.github.mipmip.specgettyondroid.viewmodel.ChangeViewModel
+import io.github.mipmip.specgettyondroid.viewmodel.DeltaViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.ProjectViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.RepoListViewModel
 
@@ -86,14 +88,15 @@ fun SpecgettyNavHost(projects: ProjectRepository) {
                 navArgument(Destinations.DELTA_ARG_NAME) { type = NavType.StringType },
             ),
         ) { entry ->
+            val repoId = Destinations.decode(
+                entry.arguments?.getString(Destinations.DELTA_ARG_REPO).orEmpty(),
+            )
             val name = Destinations.decode(
                 entry.arguments?.getString(Destinations.DELTA_ARG_NAME).orEmpty(),
             )
-            NotBuiltYetScreen(
-                title = name,
-                what = "Comparing a change's spec deltas arrives next.",
-                onBack = { navController.popBackStack() },
-            )
+            val model: DeltaViewModel =
+                viewModel(factory = DeltaViewModel.factory(projects, repoId, name))
+            DeltaScreen(viewModel = model, onBack = { navController.popBackStack() })
         }
 
         composable(

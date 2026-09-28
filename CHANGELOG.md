@@ -43,3 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The change screen: a tab per artifact file the change actually has, rendered
   as Markdown, a tasks tab drawing each checkbox as a box beside the progress,
   and a Specs tab listing the capabilities the change touches.
+- The spec delta view: every requirement a change adds, modifies, removes or
+  renames, and for a change not yet archived, the difference between a modified
+  requirement and the one it modifies.

@@ -111,6 +111,7 @@ dependencies {
     implementation(libs.markwon.tables)
     implementation(libs.markwon.strikethrough)
     implementation(libs.markwon.tasklist)
+    implementation(libs.java.diff.utils)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
