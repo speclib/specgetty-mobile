@@ -22,3 +22,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a forge page URL is turned into one that actually clones.
 - The spec parser, reading a `spec.md` by the rules OpenSpec's own parser uses.
   A file that does not fit them says every reason why, with the line for each.
+- The delta parser, reading a change's spec file into requirements marked ADDED,
+  MODIFIED, REMOVED or RENAMED, and reporting what archiving would not apply.
