@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-cjzs
 title: Repository store over JGit
-status: todo
+status: completed
+openspec-link: openspec/changes/archive/2026-09-28-repository-store-over-jgit
 type: epic
 priority: normal
 created_at: 2026-09-28T19:47:14Z
-updated_at: 2026-09-28T19:47:14Z
+updated_at: 2026-09-28T20:11:49Z
 parent: specgetty-mobile-4cpl
 blocked_by:
     - specgetty-mobile-vo5e

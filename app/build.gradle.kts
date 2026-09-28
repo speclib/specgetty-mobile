@@ -20,6 +20,8 @@ private val coverageExclusions = listOf(
     "io/github/mipmip/specgettyondroid/ui/**",
     "io/github/mipmip/specgettyondroid/MainActivity*",
     "io/github/mipmip/specgettyondroid/SpecgettyApplication*",
+    "io/github/mipmip/specgettyondroid/repo/AndroidGit*",
+    "io/github/mipmip/specgettyondroid/repo/AndroidSystemReader*",
 )
 
 private val corePackages = listOf(
@@ -95,9 +97,11 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.jgit)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.jgit)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.junit)
