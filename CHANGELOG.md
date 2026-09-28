@@ -24,3 +24,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   A file that does not fit them says every reason why, with the line for each.
 - The delta parser, reading a change's spec file into requirements marked ADDED,
   MODIFIED, REMOVED or RENAMED, and reporting what archiving would not apply.
+- The task parser, counting a change's checkboxes by the same rule that decides
+  the totals, so the boxes drawn and the number beside them cannot disagree.
