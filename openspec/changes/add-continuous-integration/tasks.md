@@ -26,27 +26,27 @@
 
 ## 3. Check
 
-- [ ] 3.1 Add `.github/workflows/check.yml` running `scripts/gate.sh` on every
+- [x] 3.1 Add `.github/workflows/check.yml` running `scripts/gate.sh` on every
       push and pull request, with `contents: read` and a concurrency group that
       cancels a superseded run, and verify a push turns the commit green
-- [ ] 3.2 Add the Gradle cache action and verify a second run on the same branch
+- [x] 3.2 Add the Gradle cache action and verify a second run on the same branch
       resolves dependencies from the cache rather than downloading them again
-- [ ] 3.3 Keep the debug APK as an artifact named so that it reads as a debug
+- [x] 3.3 Keep the debug APK as an artifact named so that it reads as a debug
       build, and verify the artifact appears on a finished run under that name
-- [ ] 3.4 Run the coverage script on the default branch after the gate passes and
+- [x] 3.4 Run the coverage script on the default branch after the gate passes and
       keep the figure for the badge job, and verify the run log shows the same
       percentage the coverage floor measured
-- [ ] 3.5 Verify a deliberately failing commit turns the run red, and that a
+- [x] 3.5 Verify a deliberately failing commit turns the run red, and that a
       failure in either half of the gate does it
 
 ## 4. Badges
 
-- [ ] 4.1 Add `.github/workflows/badges.yml` triggered by a successful Check on
+- [x] 4.1 Add `.github/workflows/badges.yml` triggered by a successful Check on
       the default branch, with `contents: write`, and verify it does not run for
       a pull request from a fork
-- [ ] 4.2 Publish the OpenSpec metrics and verify `gh-pages` is created on the
+- [x] 4.2 Publish the OpenSpec metrics and verify `gh-pages` is created on the
       first run and holds the four badge files
-- [ ] 4.3 Publish the coverage figure Check measured, and verify the published
+- [x] 4.3 Publish the coverage figure Check measured, and verify the published
       JSON carries that number rather than one measured again
 - [ ] 4.4 Verify a red Check publishes nothing and the previous badges stay
 
@@ -80,7 +80,7 @@
 
 ## 7. First release
 
-- [ ] 7.1 Move the `[Unreleased]` entries in `CHANGELOG.md` under `0.1.0`, and
+- [x] 7.1 Move the `[Unreleased]` entries in `CHANGELOG.md` under `0.1.0`, and
       verify the extraction step reads that entry back
 - [ ] 7.2 Tag `v0.1.0`, and verify the release carries a signed APK that installs
       on a device with `adb install` and opens
