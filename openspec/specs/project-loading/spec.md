@@ -7,26 +7,6 @@ eagerly, but not how a spec's text is understood.
 
 ## Requirements
 
-### Requirement: The project is the one at the repository root
-
-The system SHALL load the project at `openspec/` in the repository root and
-SHALL NOT scan for another.
-
-#### Scenario: A repository with a project
-
-- **WHEN** a repository holding `openspec/` at its root is loaded
-- **THEN** that project is loaded
-
-#### Scenario: A repository without one
-
-- **WHEN** a repository has no `openspec/` at its root
-- **THEN** loading reports that there is no OpenSpec project here
-
-#### Scenario: A project nested deeper
-
-- **WHEN** an `openspec/` directory exists only in a subdirectory
-- **THEN** it is not loaded
-
 ### Requirement: Capabilities are the directories under specs
 
 The system SHALL treat each directory under `openspec/specs/` holding a
@@ -240,3 +220,47 @@ with no project at all.
 
 - **WHEN** an empty project is compared with a repository that has none
 - **THEN** the two outcomes differ
+
+### Requirement: The project is the one at the recorded path
+
+The system SHALL load the project at `openspec/` beneath the path recorded for
+the entry, which is the repository root when that path is empty, and SHALL NOT
+scan for another while loading.
+
+Which projects a repository holds is settled when it is added, by
+`project-discovery`. Loading follows the path that survey recorded, so that a
+project moved or removed in the remote is reported as gone rather than silently
+replaced by another project in the same repository.
+
+#### Scenario: A repository with a project at its root
+
+- **WHEN** an entry recording the empty path is loaded and the repository holds
+  `openspec/` at its root
+- **THEN** that project is loaded
+
+#### Scenario: A project inside the repository
+
+- **WHEN** an entry recording the path `nivis` is loaded
+- **THEN** the project at `nivis/openspec/` is loaded
+
+#### Scenario: A repository without one
+
+- **WHEN** an entry recording the empty path is loaded and the repository has no
+  `openspec/` at its root
+- **THEN** loading reports that there is no OpenSpec project here
+
+#### Scenario: The recorded path no longer holds a project
+
+- **WHEN** an entry records a path whose `openspec/` is gone after a refresh
+- **THEN** loading reports that there is no OpenSpec project here, at that path
+
+#### Scenario: Another project in the same repository is not substituted
+
+- **WHEN** an entry's recorded path holds no project and a sibling directory
+  does
+- **THEN** the sibling is not loaded in its place
+
+#### Scenario: Two entries on one repository
+
+- **WHEN** two entries record two different paths within one repository
+- **THEN** each loads the project at its own path, independently of the other

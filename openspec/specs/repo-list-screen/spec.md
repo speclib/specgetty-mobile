@@ -35,9 +35,9 @@ person confirms. The URL MAY be typed, pasted, scanned from a QR code or shared
 in from another application, and every one of those SHALL end at the same form,
 filled in and editable.
 
-Where the host supports it, the screen SHALL also offer to obtain the credential
-by authorizing rather than by typing one. Typing SHALL remain available on every
-host.
+When the repository holds more than one project, confirming SHALL present those
+projects for the person to choose from, and SHALL add only the chosen ones. When
+it holds one, confirming SHALL add it with no further question.
 
 #### Scenario: Adding a public repository
 
@@ -48,6 +48,27 @@ host.
 
 - **WHEN** a URL and a token are entered and confirmed
 - **THEN** the token is used for the clone and stored
+
+#### Scenario: A repository holding one project
+
+- **WHEN** a repository holding a single project is confirmed
+- **THEN** it is added directly, with nothing further to choose
+
+#### Scenario: A repository holding several projects
+
+- **WHEN** a repository holding four projects is confirmed
+- **THEN** the four are offered by name
+- **AND** nothing has been added to the list yet
+
+#### Scenario: Choosing some of them
+
+- **WHEN** two of the offered projects are chosen and confirmed
+- **THEN** the list holds two entries for that repository
+
+#### Scenario: Choosing none of them
+
+- **WHEN** the choice is abandoned
+- **THEN** nothing is added to the list
 
 #### Scenario: An invalid URL
 
@@ -197,3 +218,26 @@ whose clone failed, and a repository that holds no OpenSpec project.
 
 - **WHEN** a repository is in a failed state
 - **THEN** it can be refreshed again without being removed and re-added
+
+### Requirement: A row says which project in a repository it is
+
+A row for a project held in a subdirectory SHALL show that directory's name and
+the repository it came from. A row for a project at a repository root SHALL be
+unchanged.
+
+#### Scenario: A project in a subdirectory
+
+- **WHEN** a row for the project at `nivis` within `nivis-openspec-stores` is
+  shown
+- **THEN** it names both
+
+#### Scenario: A project at the root
+
+- **WHEN** a row for a project at a repository root is shown
+- **THEN** it is named as before, with no path
+
+#### Scenario: Two rows on one repository
+
+- **WHEN** two projects from one repository are in the list
+- **THEN** each row carries its own statistics rather than the repository's
+  combined total

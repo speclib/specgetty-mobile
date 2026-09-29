@@ -1,4 +1,111 @@
+## REMOVED Requirements
+
+### Requirement: A repository id is derived from its URL
+
+**Reason**: The URL alone no longer identifies a list entry, because one
+repository may contribute several. It still identifies the clone, which is now
+a separate id.
+
+**Migration**: An entry stored before this change carries the empty path, whose
+entry id equals the id the URL alone produced, so no stored id changes.
+
+### Requirement: The list holds each repository once
+
+**Reason**: The list holds one entry per project, and a repository may
+contribute several of them.
+
+**Migration**: A repository contributing one project is still one entry, so a
+stored list is unchanged.
+
+### Requirement: Removing a repository chooses a new active one
+
+**Reason**: Removing an entry no longer implies removing the repository. The
+working copy and the credential belong to the repository and outlive any one
+entry that reads from them.
+
+**Migration**: The last entry for a repository removes both, which is what
+removing a repository did before.
+
 ## MODIFIED Requirements
+
+### Requirement: A token is encrypted and kept apart from the list
+
+The system SHALL encrypt an access token with a key held in the Android
+Keystore, SHALL store it separately from the repository list under the clone's
+id, and SHALL record in the list only whether a token exists.
+
+A credential obtained by authorizing MAY carry an expiry and the material needed
+to renew it. All of it SHALL be encrypted and stored the same way, and SHALL be
+removed with the last entry that uses it.
+
+#### Scenario: Storing a token
+
+- **WHEN** a repository is added with a token
+- **THEN** the token is encrypted before it is written
+- **AND** the repository list records only that a token exists
+
+#### Scenario: Reading a token back
+
+- **WHEN** the token for an entry is asked for
+- **THEN** the decrypted token is returned
+
+#### Scenario: A token shared by entries on one repository
+
+- **WHEN** a second project from a repository that has a token is added
+- **THEN** the same token is used, and no second copy is stored
+
+#### Scenario: No token
+
+- **WHEN** a repository has no token
+- **THEN** asking for its token yields nothing rather than an empty string
+
+#### Scenario: A blank token is no token
+
+- **WHEN** a repository is added with an empty or whitespace token
+- **THEN** no token is stored and the list records that there is none
+
+#### Scenario: Removing a repository
+
+- **WHEN** the last entry for a URL is removed
+- **THEN** its token is removed with it
+
+#### Scenario: Removing one of several entries on a repository
+
+- **WHEN** one of two entries sharing a URL is removed
+- **THEN** the token is kept, because the remaining entry still needs it
+
+#### Scenario: Stored material is unreadable on its own
+
+- **WHEN** the stored token material is read without the Keystore key
+- **THEN** it does not reveal the token
+
+#### Scenario: A credential that can be renewed
+
+- **WHEN** a repository holds a credential obtained by authorizing
+- **THEN** its expiry and its renewal material are encrypted and stored with it
+
+#### Scenario: Renewal material is a secret too
+
+- **WHEN** the stored renewal material is read without the Keystore key
+- **THEN** it does not reveal anything usable
+
+#### Scenario: Removing a repository that was authorized
+
+- **WHEN** the last entry for such a repository is removed
+- **THEN** its credential and its renewal material are both gone
+
+#### Scenario: A typed token is unchanged by any of this
+
+- **WHEN** a repository holds a token that was typed
+- **THEN** it has no expiry and no renewal material, and works as before
+
+#### Scenario: What the list records
+
+- **WHEN** the repository list is read
+- **THEN** it records that a credential exists and how it was obtained, and never
+  the credential itself
+
+## ADDED Requirements
 
 ### Requirement: A repository id is derived from its URL and its path
 
@@ -111,55 +218,6 @@ entry's URL.
 
 - **WHEN** the last entry for a URL is removed
 - **THEN** the working copy and the credential are deleted
-
-### Requirement: A token is encrypted and kept apart from the list
-
-The system SHALL encrypt an access token with a key held in the Android
-Keystore, SHALL store it separately from the repository list under the clone's
-id, and SHALL record in the list only whether a token exists.
-
-#### Scenario: Storing a token
-
-- **WHEN** a repository is added with a token
-- **THEN** the token is encrypted before it is written
-- **AND** the repository list records only that a token exists
-
-#### Scenario: Reading a token back
-
-- **WHEN** the token for an entry is asked for
-- **THEN** the decrypted token is returned
-
-#### Scenario: A token shared by entries on one repository
-
-- **WHEN** a second project from a repository that has a token is added
-- **THEN** the same token is used, and no second copy is stored
-
-#### Scenario: No token
-
-- **WHEN** a repository has no token
-- **THEN** asking for its token yields nothing rather than an empty string
-
-#### Scenario: A blank token is no token
-
-- **WHEN** a repository is added with an empty or whitespace token
-- **THEN** no token is stored and the list records that there is none
-
-#### Scenario: Removing a repository
-
-- **WHEN** the last entry for a URL is removed
-- **THEN** its token is removed with it
-
-#### Scenario: Removing one of several entries on a repository
-
-- **WHEN** one of two entries sharing a URL is removed
-- **THEN** the token is kept, because the remaining entry still needs it
-
-#### Scenario: Stored material is unreadable on its own
-
-- **WHEN** the stored token material is read without the Keystore key
-- **THEN** it does not reveal the token
-
-## ADDED Requirements
 
 ### Requirement: A list written before paths existed still reads
 

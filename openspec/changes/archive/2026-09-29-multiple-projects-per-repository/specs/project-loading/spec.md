@@ -1,4 +1,16 @@
-## MODIFIED Requirements
+## REMOVED Requirements
+
+### Requirement: The project is the one at the repository root
+
+**Reason**: One repository can hold several projects, so the root is no longer
+where a project is, but one of the places it may be. The replacement below says
+the same thing for the empty path and covers the rest.
+
+**Migration**: An entry stored before this change carries the empty path, which
+resolves to the repository root, so every project that loaded before loads
+unchanged.
+
+## ADDED Requirements
 
 ### Requirement: The project is the one at the recorded path
 

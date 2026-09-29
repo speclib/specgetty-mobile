@@ -90,6 +90,33 @@ it holds one, confirming SHALL add it with no further question.
 - **WHEN** a captured URL carries embedded credentials or a token parameter
 - **THEN** the token field stays empty and the credentials are not stored
 
+#### Scenario: Authorizing is offered where it works
+
+- **WHEN** the URL in the form is one the app can authorize for
+- **THEN** the form offers to authorize as well as to type a token
+
+#### Scenario: Authorizing is not offered where it does not
+
+- **WHEN** the URL is for a host the app cannot authorize for
+- **THEN** only typing is offered, with no mention of a feature that will not
+  work here
+
+#### Scenario: A credential that was authorized
+
+- **WHEN** authorization succeeds for the URL in the form
+- **THEN** the form shows that a credential is held, without showing it
+- **AND** nothing is added until the person confirms
+
+#### Scenario: Abandoning the authorization
+
+- **WHEN** the person starts authorizing and backs out
+- **THEN** the form is as it was, and nothing has been added or stored
+
+#### Scenario: Neither a token nor an authorization
+
+- **WHEN** a private repository is added with no credential at all
+- **THEN** it fails as it does today, saying the authentication failed
+
 ## ADDED Requirements
 
 ### Requirement: A row says which project in a repository it is
