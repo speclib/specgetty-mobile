@@ -66,3 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The camera handed the decoded text straight to the screen from its own thread;
   it is now passed to the screen and acted on there. A code recognised in
   several frames running is also acted on once rather than once per frame.
+- The Properties tab on a project no longer has its label broken across two
+  lines on a phone. The four tabs now take the width their labels need, and the
+  row scrolls when they do not all fit.

@@ -24,7 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -98,15 +98,7 @@ fun ProjectScreen(
                 return@Column
             }
 
-            TabRow(selectedTabIndex = tab.ordinal) {
-                ProjectTab.entries.forEach { entry ->
-                    Tab(
-                        selected = entry == tab,
-                        onClick = { viewModel.selectTab(entry) },
-                        text = { Text(entry.label) },
-                    )
-                }
-            }
+            ProjectTabs(selected = tab, onSelect = viewModel::selectTab)
 
             when (tab) {
                 ProjectTab.OVERVIEW -> OverviewTab(viewModel, onOpenChange)
@@ -114,6 +106,28 @@ fun ProjectScreen(
                 ProjectTab.SPECS -> SpecsTab(viewModel, onOpenSpec)
                 ProjectTab.PROPERTIES -> PropertiesTab(viewModel)
             }
+        }
+    }
+}
+
+/**
+ * Scrollable, not equal-width. `TabRow` gives each of the four a quarter of the
+ * screen, which is narrower than "Properties" on a phone, and Compose then
+ * breaks the word because there is no space in it to break at. Each tab takes
+ * the width its label needs, and the row scrolls when they do not all fit.
+ *
+ * Internal rather than private so the test can render the row the app renders,
+ * instead of a copy of it that could drift.
+ */
+@Composable
+internal fun ProjectTabs(selected: ProjectTab, onSelect: (ProjectTab) -> Unit) {
+    ScrollableTabRow(selectedTabIndex = selected.ordinal, edgePadding = 0.dp) {
+        ProjectTab.entries.forEach { entry ->
+            Tab(
+                selected = entry == selected,
+                onClick = { onSelect(entry) },
+                text = { Text(entry.label, maxLines = 1, softWrap = false) },
+            )
         }
     }
 }
