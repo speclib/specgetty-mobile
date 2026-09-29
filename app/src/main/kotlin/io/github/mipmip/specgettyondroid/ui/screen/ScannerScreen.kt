@@ -41,14 +41,15 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import io.github.mipmip.specgettyondroid.capture.CaptureResult
+import io.github.mipmip.specgettyondroid.capture.DecodeRelay
 import io.github.mipmip.specgettyondroid.capture.FrameConverter
 import io.github.mipmip.specgettyondroid.capture.QrDecoder
 import io.github.mipmip.specgettyondroid.capture.UrlCapture
 import io.github.mipmip.specgettyondroid.ui.Message
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +63,23 @@ fun ScannerScreen(onResult: (String) -> Unit, onDismiss: () -> Unit) {
     }
     var asked by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<String?>(null) }
+
+    // The analyser writes here from the camera's thread; this composable reads
+    // it, so the capture and everything after it happens on the main thread.
+    val relay = remember { DecodeRelay() }
+    val decoded by relay.decoded.collectAsStateWithLifecycle()
+
+    LaunchedEffect(decoded) {
+        val text = decoded ?: return@LaunchedEffect
+        when (val captured = UrlCapture.capture(text)) {
+            is CaptureResult.Found -> onResult(captured.url)
+            CaptureResult.NoUrl -> {
+                notice = "That code holds no repository URL."
+                // Not a URL, so nothing was acted on: let the next frame try.
+                relay.rearm()
+            }
+        }
+    }
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -88,15 +106,7 @@ fun ScannerScreen(onResult: (String) -> Unit, onDismiss: () -> Unit) {
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
-                granted -> CameraPreview(
-                    onDecoded = { text ->
-                        when (val captured = UrlCapture.capture(text)) {
-                            is CaptureResult.Found -> onResult(captured.url)
-                            CaptureResult.NoUrl ->
-                                notice = "That code holds no repository URL."
-                        }
-                    },
-                )
+                granted -> CameraPreview(relay = relay)
 
                 asked -> Message(
                     title = "Camera access is needed to scan",
@@ -137,12 +147,11 @@ fun ScannerScreen(onResult: (String) -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun CameraPreview(onDecoded: (String) -> Unit) {
+private fun CameraPreview(relay: DecodeRelay) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val executor = remember { Executors.newSingleThreadExecutor() }
     val decoder = remember { QrDecoder() }
-    val handled = remember { AtomicBoolean(false) }
     val previewView = remember { PreviewView(context) }
 
     AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
@@ -161,7 +170,7 @@ private fun CameraPreview(onDecoded: (String) -> Unit) {
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .build()
-                    .also { it.setAnalyzer(executor, analyzer(decoder, handled, onDecoded)) }
+                    .also { it.setAnalyzer(executor, analyzer(decoder, relay)) }
 
                 runCatching {
                     provider?.unbindAll()
@@ -183,24 +192,19 @@ private fun CameraPreview(onDecoded: (String) -> Unit) {
     }
 }
 
-private fun analyzer(
-    decoder: QrDecoder,
-    handled: AtomicBoolean,
-    onDecoded: (String) -> Unit,
-) = ImageAnalysis.Analyzer { image ->
-    try {
-        if (!handled.get()) {
-            decode(decoder, image)?.let { text ->
-                if (handled.compareAndSet(false, true)) {
-                    onDecoded(text)
-                }
-                handled.set(false)
-            }
+/**
+ * Runs on the camera's executor. It decodes and hands the text to the relay,
+ * and does nothing else: acting on it here would touch navigation and Compose
+ * state from the wrong thread.
+ */
+private fun analyzer(decoder: QrDecoder, relay: DecodeRelay) =
+    ImageAnalysis.Analyzer { image ->
+        try {
+            decode(decoder, image)?.let(relay::offer)
+        } finally {
+            image.close()
         }
-    } finally {
-        image.close()
     }
-}
 
 private fun decode(decoder: QrDecoder, image: ImageProxy): String? {
     val plane = image.planes.firstOrNull() ?: return null

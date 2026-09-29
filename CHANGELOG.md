@@ -59,3 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - End-to-end tests on an API 26 emulator covering adding a repository, browsing
   its changes, opening a spec delta's difference, and reading a spec.
 - Store screenshots, taken by driving the app on an emulator rather than drawn.
+
+### Fixed
+
+- Scanning a QR code no longer crashes the app the moment a code is recognised.
+  The camera handed the decoded text straight to the screen from its own thread;
+  it is now passed to the screen and acted on there. A code recognised in
+  several frames running is also acted on once rather than once per frame.
