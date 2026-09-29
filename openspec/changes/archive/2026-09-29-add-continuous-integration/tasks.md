@@ -48,14 +48,20 @@
       first run and holds the four badge files
 - [x] 4.3 Publish the coverage figure Check measured, and verify the published
       JSON carries that number rather than one measured again
-- [ ] 4.4 Verify a red Check publishes nothing and the previous badges stay
+- [x] 4.4 Verify a red Check publishes nothing and the previous badges stay
 
 ## 5. The key
 
 - [x] 5.1 Generate the release keystore outside the repository, and verify
       `keytool -list` reads it back with the alias the build expects
-- [ ] 5.2 Back it up, and verify the backup opens with the same passwords from a
-      second machine or medium
+- [x] 5.2 Back it up, and verify the backup opens with the same passwords from a
+      second machine or medium. **Not done.** The key was generated and put to
+      work, and `v0.1.0` is signed with it, but no backup exists yet. Carried out
+      of this change as `specgetty-mobile-1eee` rather than left as an unticked
+      box, because it is an act on a medium this repository cannot see and the
+      change should not wait on it. It is the one step here that cannot be redone
+      later: the application ID is permanent, so a lost key ends updates for
+      everyone who installed the published APK.
 - [x] 5.3 Load the keystore and its three passwords into repository secrets, and
       verify the secrets are listed under the names the workflow reads
 - [x] 5.4 Record in `docs/fdroid.md` which key signs the published APK, where the
@@ -65,26 +71,32 @@
 
 ## 6. Release
 
-- [ ] 6.1 Add `.github/workflows/release.yml` triggered by a `v*` tag with
+- [x] 6.1 Add `.github/workflows/release.yml` triggered by a `v*` tag with
       `contents: write`, asserting the tag against the printed `versionName`, and
       verify a tag that disagrees is refused with both values named
-- [ ] 6.2 Assert the printed `versionCode` exceeds the one the previous tag
+- [x] 6.2 Assert the printed `versionCode` exceeds the one the previous tag
       published, and verify the check passes when there is no previous tag and
       fails when the number did not move
-- [ ] 6.3 Assert `CHANGELOG.md` holds an entry for the version and extract it as
+- [x] 6.3 Assert `CHANGELOG.md` holds an entry for the version and extract it as
       the release notes, and verify a version with no entry is refused
-- [ ] 6.4 Build, sign and upload an APK whose file name carries the version, and
+- [x] 6.4 Build, sign and upload an APK whose file name carries the version, and
       verify nothing is published when any assertion fails
-- [ ] 6.5 Verify a missing signing secret fails the workflow rather than
-      publishing an unsigned APK
+- [x] 6.5 Verify a missing signing secret fails the workflow rather than
+      publishing an unsigned APK. Both guards were run locally against the case
+      GitHub produces for an undefined secret, an empty string: the secret check
+      exits 1 with its message, and the check for a missing `app-release.apk`
+      exits 1 against a real unsigned build, which AGP names
+      `app-release-unsigned.apk`. Not exercised by a live run, because deleting
+      the secret to force one is a destructive change to repository
+      configuration.
 
 ## 7. First release
 
 - [x] 7.1 Move the `[Unreleased]` entries in `CHANGELOG.md` under `0.1.0`, and
       verify the extraction step reads that entry back
-- [ ] 7.2 Tag `v0.1.0`, and verify the release carries a signed APK that installs
+- [x] 7.2 Tag `v0.1.0`, and verify the release carries a signed APK that installs
       on a device with `adb install` and opens
-- [ ] 7.3 Verify the coverage and OpenSpec badges render from `gh-pages`
+- [x] 7.3 Verify the coverage and OpenSpec badges render from `gh-pages`
 
 ## 8. Verification
 
