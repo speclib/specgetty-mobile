@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-v047
 title: Continuous integration and a signed release APK
-status: in-progress
+status: completed
+openspec-link: openspec/changes/archive/2026-09-29-add-continuous-integration
 type: epic
 priority: normal
 created_at: 2026-09-29T16:21:08Z
-updated_at: 2026-09-29T16:52:13Z
+updated_at: 2026-09-29T17:40:00Z
 blocking:
     - specgetty-mobile-4l3a
 ---
