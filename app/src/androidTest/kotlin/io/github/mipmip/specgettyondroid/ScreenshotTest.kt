@@ -1,5 +1,6 @@
 package io.github.mipmip.specgettyondroid
 
+import android.content.res.Configuration
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -122,6 +124,11 @@ class ScreenshotTest {
     companion object {
         const val SHELL_DIR = "/data/local/tmp"
         const val PREFIX = "specgetty-"
+
+        // Long enough to read a card before it changes.
+        const val HOLD_MS = 1500L
+
+        const val READY = "specgetty-recording-ready"
     }
 
     @Test
@@ -158,6 +165,134 @@ class ScreenshotTest {
         compose.firstWithText("A web address is extracted from arbitrary text").performClick()
         compose.awaitText("Difference")
         shoot("5_difference")
+    }
+
+    /**
+     * A spec card, which is the thing the app exists to show.
+     *
+     * Its own test rather than a detour inside the run above, because reaching
+     * it and coming back would need BACK, and BACK finishes this rule's host
+     * activity instead of navigating.
+     */
+    @Test
+    fun takeTheSpecCardScreenshot() {
+        compose.setContent { SpecgettyTheme { SpecgettyNavHost(repository, OfflineAuth.deviceFlow, OfflineAuth.installations) } }
+
+        openTheSpec()
+        compose.awaitText("Next", substring = true)
+        shoot("6_spec_card")
+    }
+
+    /**
+     * The two-pane layout, which only appears when the window is not compact.
+     *
+     * It is a test of its own rather than a rotation inside the one above,
+     * because the rule's host activity is created before the body runs. Turning
+     * the device then would recreate it and take the content with it, so
+     * `scripts/screenshots.sh` rotates the device and runs this separately.
+     */
+    @Test
+    fun takeTheWideScreenshot() {
+        // The whole instrumented suite runs this too, and it has nothing to
+        // photograph on an upright phone: the two-pane layout is what is being
+        // shown, and a compact window does not have one. `screenshots.sh` turns
+        // the device before asking for it.
+        Assume.assumeTrue(isWide())
+
+        compose.setContent { SpecgettyTheme { SpecgettyNavHost(repository, OfflineAuth.deviceFlow, OfflineAuth.installations) } }
+
+        openTheSpec()
+
+        // Both panes are on screen at once, which is the thing being
+        // photographed: the outline stays while the card is open.
+        compose.awaitText("Purpose")
+        shoot("7_adaptive")
+    }
+
+    /**
+     * Drives the hero recording: a spec opened as an outline, a card opened on
+     * it, and a reader stepping through requirement and scenarios.
+     *
+     * It holds on each card, which is a deliberate waste of time in a test. A
+     * recording made at the speed the others run at changes faster than it can
+     * be read and looks like a fault rather than a feature. `screenrecord` is
+     * started and stopped by `scripts/recording.sh` around this run, so nothing
+     * here writes a file.
+     */
+    @Test
+    fun recordSteppingThroughASpec() {
+        // Only when `scripts/recording.sh` asks for it. It is a driver for the
+        // camera rather than a test, and it spends most of its time waiting on
+        // purpose, which the suite should not pay for on every run.
+        Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("recording") == "true")
+
+        compose.setContent { SpecgettyTheme { SpecgettyNavHost(repository, OfflineAuth.deviceFlow, OfflineAuth.installations) } }
+
+        compose.awaitDescription("Add a repository")
+        compose.firstWithDescription("Add a repository").performClick()
+        compose.awaitDescription("Repository URL")
+        compose.firstWithDescription("Repository URL").performTextInput(server.url)
+        compose.firstWithDescription("Confirm adding the repository").performClick()
+
+        compose.awaitText("3 specs", substring = true)
+        compose.firstWithText("specs", substring = true).performClick()
+        compose.awaitText("Overview")
+
+        compose.firstWithText("Specs").performClick()
+        compose.awaitText("spec-parsing")
+        compose.firstWithText("spec-parsing").performClick()
+        compose.awaitText("Purpose")
+
+        // Everything up to here is getting the app into the state worth
+        // filming: a launcher, a form and a clone. `scripts/recording.sh` waits
+        // for this file before it starts the camera, so none of it is in the
+        // hero. The first wait is doubled to cover the camera starting.
+        compose.waitForIdle()
+        shell("touch $SHELL_DIR/$READY")
+        Thread.sleep(HOLD_MS * 2)
+
+        compose.firstWithText("Purpose").performClick()
+        compose.awaitText("Next", substring = true)
+        hold()
+
+        repeat(3) {
+            compose.firstWithText("Next", substring = true).performClick()
+            compose.waitForIdle()
+            hold()
+        }
+
+        compose.firstWithText("Previous", substring = true).performClick()
+        compose.waitForIdle()
+        hold()
+    }
+
+    private fun isWide(): Boolean {
+        val configuration = InstrumentationRegistry.getInstrumentation()
+            .targetContext.resources.configuration
+        return configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    }
+
+    private fun hold() {
+        compose.waitForIdle()
+        Thread.sleep(HOLD_MS)
+    }
+
+    private fun openTheSpec() {
+        compose.awaitDescription("Add a repository")
+        compose.firstWithDescription("Add a repository").performClick()
+        compose.awaitDescription("Repository URL")
+        compose.firstWithDescription("Repository URL").performTextInput(server.url)
+        compose.firstWithDescription("Confirm adding the repository").performClick()
+
+        compose.awaitText("3 specs", substring = true)
+        compose.firstWithText("specs", substring = true).performClick()
+        compose.awaitText("Overview")
+
+        compose.firstWithText("Specs").performClick()
+        compose.awaitText("spec-parsing")
+        compose.firstWithText("spec-parsing").performClick()
+        compose.awaitText("Purpose")
+        compose.firstWithText("A scenario's content is never dropped").performClick()
     }
 
     private val capture = """

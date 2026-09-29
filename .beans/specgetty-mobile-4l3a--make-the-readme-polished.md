@@ -1,11 +1,11 @@
 ---
 # specgetty-mobile-4l3a
 title: make the readme polished
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-29T09:15:31Z
-updated_at: 2026-09-29T09:18:39Z
+updated_at: 2026-09-29T18:10:12Z
 ---
 
 Have a look at this change and adapt this to this project.

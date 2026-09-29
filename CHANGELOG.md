@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The README now shows the app rather than only describing it: a recording of a
+  spec being stepped through card by card, screenshots, and a way to download a
+  signed APK instead of building one yourself.
+
 ## [0.1.0] - 2026-09-29
 
 ### Added

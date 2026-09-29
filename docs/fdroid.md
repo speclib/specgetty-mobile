@@ -284,18 +284,38 @@ no value for any of them.
 
 MIT. `LICENSE` is at the repository root.
 
-## Screenshots
+## Screenshots and the recording
 
-The five in `fastlane/metadata/android/en-US/images/phoneScreenshots/` were
-taken by driving the app on an API 26 emulator, not composed by hand. Retake
-them with:
+The seven in `fastlane/metadata/android/en-US/images/phoneScreenshots/` and the
+recording in `docs/images/` were taken by driving the app, not composed by hand.
+Retake them with:
 
 ```bash
 nix develop .#emulator --command ./scripts/screenshots.sh
+nix develop .#emulator --command ./scripts/recording.sh
 ```
 
 The project they show is written by the test that takes them. Somebody else's
 specifications are not this project's to publish.
+
+**Both are taken on API 26**, the same version the instrumented tests run on.
+That is not the version they should be taken on. The tests use API 26 because it
+is the minimum the app supports and where a regression shows up first, which is a
+reason about correctness and says nothing about what the app should look like in
+a picture, where 2017 system chrome is the wrong answer.
+
+Moving them to API 36 is blocked by `specgetty-mobile-ityo`: the instrumented
+suite does not run on API 36 at all. Every test that adds a repository times out,
+including the one that only needs an error message to appear. `scripts/emulator.sh`
+takes an API level, so this becomes one line in each script once that is fixed.
+
+The recording is driven by a Compose test rather than by taps at fixed
+coordinates, so that it cannot quietly start filming the wrong thing when a
+layout moves. The test signals when the app has reached the spec, and the script
+starts the camera then; without that the recording opens on a launcher and spends
+most of its length on a form. It is encoded as a GIF because GitHub will not play
+an mp4 from a relative path, and held to 800 KB so that the README is not the
+thing a reader waits for.
 
 ## Not affiliated
 

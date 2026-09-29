@@ -86,6 +86,7 @@
                 emuSdk
                 pkgs.git
                 pkgs.jq
+                pkgs.ffmpeg-headless
               ];
 
               JAVA_HOME = "${pkgs.jdk17}";
