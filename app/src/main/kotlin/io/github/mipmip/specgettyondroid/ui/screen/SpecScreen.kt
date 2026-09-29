@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -90,24 +93,48 @@ fun SpecScreen(viewModel: SpecViewModel, onBack: () -> Unit) {
                             ProblemReport(s.problems) { viewModel.showRaw(true) }
 
                         is SpecScreenState.Outline ->
-                            SpecOutline(s.nodes) { viewModel.select(it) }
+                            SpecOutline(s.nodes, selected) { viewModel.select(it) }
                     }
                 },
-                detail = { selected?.let { NodeDetail(it) } },
+                detail = {
+                    selected?.let {
+                        NodeDetail(
+                            node = it,
+                            hasPrevious = viewModel.hasPrevious,
+                            hasNext = viewModel.hasNext,
+                            onPrevious = viewModel::previous,
+                            onNext = viewModel::next,
+                        )
+                    }
+                },
             )
         }
     }
 }
 
 @Composable
-private fun SpecOutline(nodes: List<SpecNode>, onSelect: (SpecNode) -> Unit) {
+private fun SpecOutline(
+    nodes: List<SpecNode>,
+    selected: SpecNode?,
+    onSelect: (SpecNode) -> Unit,
+) {
     LazyColumn(contentPadding = PaddingValues(16.dp)) {
         items(nodes.size) { i ->
             val node = nodes[i]
             val indent = if (node.kind == NodeKind.SCENARIO) 24.dp else 0.dp
+            // Marked, so stepping through from the card does not lose the
+            // reader's place in the outline beside it.
+            val isSelected = node.path == selected?.path
             Column(
                 Modifier
                     .fillMaxWidth()
+                    .then(
+                        if (isSelected) {
+                            Modifier.background(MaterialTheme.colorScheme.primaryContainer)
+                        } else {
+                            Modifier
+                        },
+                    )
                     .clickable { onSelect(node) }
                     .padding(start = indent, top = 10.dp, bottom = 10.dp),
             ) {
@@ -135,8 +162,35 @@ private fun SpecOutline(nodes: List<SpecNode>, onSelect: (SpecNode) -> Unit) {
 }
 
 @Composable
-private fun NodeDetail(node: SpecNode) {
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+private fun NodeDetail(
+    node: SpecNode,
+    hasPrevious: Boolean,
+    hasNext: Boolean,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        NodeBody(node, Modifier.weight(1f))
+        HorizontalDivider()
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            TextButton(onClick = onPrevious, enabled = hasPrevious) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                Text("  Previous")
+            }
+            TextButton(onClick = onNext, enabled = hasNext) {
+                Text("Next  ")
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NodeBody(node: SpecNode, modifier: Modifier = Modifier) {
+    LazyColumn(modifier = modifier, contentPadding = PaddingValues(16.dp)) {
         item {
             Text(
                 node.title,

@@ -254,6 +254,120 @@ class SpecViewModelTest {
         assertEquals("reopening reused the cache", after, repository.cacheOf(config.id).parses)
     }
 
+    // --- stepping through the outline from the card ---
+
+    private suspend fun TestScope.openGoodSpec(): SpecViewModel {
+        val (vm, _) = open("thing") {
+            commit("openspec/specs/thing/spec.md", goodSpec, "s")
+        }
+        advanceUntilIdle()
+        return vm
+    }
+
+    private fun SpecViewModel.outline() = (state.value as SpecScreenState.Outline).nodes
+
+    @Test
+    fun `stepping forward from a requirement reaches its first scenario`() = runTest {
+        val vm = openGoodSpec()
+        vm.select(vm.outline().first { it.kind == NodeKind.REQUIREMENT })
+
+        vm.next()
+        assertEquals("One clause", vm.selected.value?.title)
+        assertEquals(NodeKind.SCENARIO, vm.selected.value?.kind)
+    }
+
+    @Test
+    fun `stepping on from the last scenario reaches the next requirement`() = runTest {
+        val vm = openGoodSpec()
+        vm.select(vm.outline().first { it.title == "Written as prose" })
+
+        vm.next()
+        assertEquals("The second thing", vm.selected.value?.title)
+        assertEquals(NodeKind.REQUIREMENT, vm.selected.value?.kind)
+    }
+
+    @Test
+    fun `stepping back returns to the node before`() = runTest {
+        val vm = openGoodSpec()
+        vm.select(vm.outline().first { it.title == "One clause" })
+
+        vm.previous()
+        assertEquals("The first thing", vm.selected.value?.title)
+    }
+
+    @Test
+    fun `the first node has no previous`() = runTest {
+        val vm = openGoodSpec()
+        vm.select(vm.outline().first())
+
+        assertFalse(vm.hasPrevious)
+        vm.previous()
+        assertEquals("Purpose", vm.selected.value?.title)
+    }
+
+    @Test
+    fun `the last node has no next, and stepping on does not wrap`() = runTest {
+        val vm = openGoodSpec()
+        val last = vm.outline().last()
+        vm.select(last)
+
+        assertFalse(vm.hasNext)
+        vm.next()
+        assertEquals("the last node stayed put", last.path, vm.selected.value?.path)
+    }
+
+    @Test
+    fun `stepping walks the whole outline in the file order`() = runTest {
+        val vm = openGoodSpec()
+        val expected = vm.outline().map { it.title }
+
+        vm.select(vm.outline().first())
+        val walked = mutableListOf(vm.selected.value!!.title)
+        while (vm.hasNext) {
+            vm.next()
+            walked += vm.selected.value!!.title
+        }
+        assertEquals(expected, walked)
+    }
+
+    @Test
+    fun `stepping back down is the same order reversed`() = runTest {
+        val vm = openGoodSpec()
+        val expected = vm.outline().map { it.title }.reversed()
+
+        vm.select(vm.outline().last())
+        val walked = mutableListOf(vm.selected.value!!.title)
+        while (vm.hasPrevious) {
+            vm.previous()
+            walked += vm.selected.value!!.title
+        }
+        assertEquals(expected, walked)
+    }
+
+    @Test
+    fun `nothing is offered when no node is selected`() = runTest {
+        val vm = openGoodSpec()
+        assertNull(vm.selected.value)
+        assertFalse(vm.hasNext)
+        assertFalse(vm.hasPrevious)
+    }
+
+    @Test
+    fun `nothing is offered for a file that is not a spec`() = runTest {
+        val (vm, _) = open("broken") {
+            commit(
+                "openspec/specs/broken/spec.md",
+                "# broken Specification\n\n## ADDED Requirements\n\n" +
+                    "### Requirement: A\nProse.\n",
+                "s",
+            )
+        }
+        advanceUntilIdle()
+        assertTrue(vm.state.value is SpecScreenState.Report)
+        assertFalse(vm.hasNext)
+        assertFalse(vm.hasPrevious)
+    }
+
     @Test
     fun `a real corpus spec opens as an outline`() = runTest {
         val corpusSpec = io.github.mipmip.specgettyondroid.spec.Corpus

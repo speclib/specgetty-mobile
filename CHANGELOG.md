@@ -59,6 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - End-to-end tests on an API 26 emulator covering adding a repository, browsing
   its changes, opening a spec delta's difference, and reading a spec.
 - Store screenshots, taken by driving the app on an emulator rather than drawn.
+- A spec can be read straight through: a card now has next and previous buttons
+  that step through the outline in the file's own order, and the outline marks
+  the node you are on. Neither end wraps.
 
 ### Fixed
 

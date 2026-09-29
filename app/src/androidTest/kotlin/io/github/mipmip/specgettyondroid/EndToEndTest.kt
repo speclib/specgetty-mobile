@@ -209,6 +209,32 @@ class EndToEndTest {
     }
 
     @Test
+    fun aSpecCardStepsToTheNextAndPreviousNode() {
+        start()
+        addTheRepository()
+        openTheProject()
+
+        compose.firstWithText("Specs").performClick()
+        compose.awaitText("thing")
+        compose.firstWithText("thing").performClick()
+
+        // Open the first node's card, then walk forward through the outline.
+        compose.awaitText("Purpose")
+        compose.firstWithText("Purpose").performClick()
+        compose.awaitText("Next", substring = true)
+
+        compose.firstWithText("Next", substring = true).performClick()
+        compose.awaitText("A settled thing")
+
+        compose.firstWithText("Next", substring = true).performClick()
+        compose.awaitText("It does")
+
+        // And back again.
+        compose.firstWithText("Previous", substring = true).performClick()
+        compose.awaitText("A settled thing")
+    }
+
+    @Test
     fun aChangeShowsItsTasksAsBoxes() {
         start()
         addTheRepository()

@@ -88,6 +88,33 @@ class SpecViewModel(
         _selected.value = null
     }
 
+    /** The outline's own order, or empty when the file is not a spec. */
+    private val nodes: List<SpecNode>
+        get() = (_state.value as? SpecScreenState.Outline)?.nodes.orEmpty()
+
+    /**
+     * Where the card is in the outline, or -1. Found by path rather than by
+     * identity, so a re-parse that produced an equal node still locates it.
+     */
+    private val selectedIndex: Int
+        get() = _selected.value?.let { current -> nodes.indexOfFirst { it.path == current.path } }
+            ?: -1
+
+    val hasNext: Boolean
+        get() = selectedIndex >= 0 && selectedIndex < nodes.lastIndex
+
+    val hasPrevious: Boolean
+        get() = selectedIndex > 0
+
+    /** Neither end wraps: returning to the first node would lose a reader's place. */
+    fun next() {
+        if (hasNext) _selected.value = nodes[selectedIndex + 1]
+    }
+
+    fun previous() {
+        if (hasPrevious) _selected.value = nodes[selectedIndex - 1]
+    }
+
     fun showRaw(showing: Boolean) {
         _showingRaw.value = showing
     }
