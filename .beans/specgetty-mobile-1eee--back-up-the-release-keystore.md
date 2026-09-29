@@ -1,11 +1,11 @@
 ---
 # specgetty-mobile-1eee
 title: Back up the release keystore
-status: todo
+status: completed
 type: task
 priority: critical
 created_at: 2026-09-29T17:38:24Z
-updated_at: 2026-09-29T17:38:24Z
+updated_at: 2026-09-29T19:08:29Z
 ---
 
 The release keystore was generated and loaded into repository secrets while

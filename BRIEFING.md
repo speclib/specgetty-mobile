@@ -14,7 +14,7 @@ refine it; they do not replace it.
 |----------------|-----------------------------------------|
 | Application ID | `io.github.mipmip.specgettyondroid`     |
 | App name       | Specgetty on Droid                      |
-| License        | MIT                                     |
+| License        | Apache-2.0                              |
 | minSdk         | 26                                      |
 | versionCode    | 1                                       |
 | versionName    | 0.1.0                                   |

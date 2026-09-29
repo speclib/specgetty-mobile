@@ -7,7 +7,7 @@
 ![tasks](https://raw.githubusercontent.com/speclib/specgetty-mobile/gh-pages/badges/tasks_status.svg)
 ![changes](https://raw.githubusercontent.com/speclib/specgetty-mobile/gh-pages/badges/open_changes.svg)
 [![API 26+](https://img.shields.io/badge/API-26%2B-blue)](BRIEFING.md)
-[![MIT](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
+[![Apache 2.0](https://img.shields.io/badge/licence-Apache_2.0-blue)](LICENSE)
 
 An Android app for reading [OpenSpec](https://github.com/Fission-AI/OpenSpec)
 projects that live in git repositories. It is the mobile counterpart of
@@ -237,4 +237,4 @@ The badges above count them. `BRIEFING.md` is the source of truth for what Phase
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](LICENSE).

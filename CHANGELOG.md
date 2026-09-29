@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The stated licence. The repository has carried an Apache 2.0 `LICENSE` since
+  it was created, while the README, the briefing and the F-Droid audit all said
+  MIT. The files now say what the licence file says.
+
 ### Changed
 
 - The README now shows the app rather than only describing it: a recording of a

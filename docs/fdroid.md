@@ -30,7 +30,7 @@ the POM each artifact publishes, not from memory:
 | `jakarta.inject` | Apache-2.0 |
 | `javax.inject` | its POM carries no licence block; JSR-330 is published under Apache-2.0 |
 
-All OSI-approved, and all compatible with distributing an MIT app.
+All OSI-approved, and all compatible with distributing an Apache-2.0 app.
 
 `com.google.guava:listenablefuture:1.0` is the empty placeholder artifact that
 exists only to resolve a version conflict; it contains no code.
@@ -282,7 +282,7 @@ no value for any of them.
 
 ## Licence
 
-MIT. `LICENSE` is at the repository root.
+Apache License 2.0. `LICENSE` is at the repository root.
 
 ## Screenshots and the recording
 
