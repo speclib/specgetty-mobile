@@ -1,11 +1,12 @@
 ---
 # specgetty-mobile-4l3a
 title: make the readme polished
-status: in-progress
+status: completed
+openspec-link: openspec/changes/archive/2026-09-29-polish-the-readme
 type: task
 priority: normal
 created_at: 2026-09-29T09:15:31Z
-updated_at: 2026-09-29T18:10:12Z
+updated_at: 2026-09-29T19:20:00Z
 ---
 
 Have a look at this change and adapt this to this project.
