@@ -1,0 +1,90 @@
+# A release, built only from a tag that agrees with the tree it is built from.
+#
+# The guard runs before anything is built. A release refused here costs a tag;
+# a release published with a versionName nobody recognises, a versionCode
+# Android will not install over its predecessor, or no notes, costs whoever
+# downloads it.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # The guard reads the versionCode the previous tag published, so it needs
+      # the tags and the history behind them.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install nix
+        uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: Cache the gradle home
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Refuse a tag that disagrees with the tree
+        run: nix develop --command bash scripts/release-guard.sh "${GITHUB_REF_NAME}"
+
+      # Written outside the checkout. A build artefact left in the tree is an
+      # untracked file, and a release that stages the tree would carry it.
+      - name: Take the release notes from the changelog
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          notes="$RUNNER_TEMP/release-notes.md"
+          bash scripts/changelog-entry.sh "$version" > "$notes"
+          cat "$notes"
+
+      # The keystore is decoded outside the checkout so that no step after this
+      # one can stage it, and it is removed when the job ends whatever happens.
+      - name: Take the signing key out of the secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SPECGETTY_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "release: no signing key in the secrets; refusing to publish an unsigned APK" >&2
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      - name: Build and sign
+        env:
+          SPECGETTY_KEYSTORE: ${{ runner.temp }}/release.jks
+          SPECGETTY_KEYSTORE_PASSWORD: ${{ secrets.SPECGETTY_KEYSTORE_PASSWORD }}
+          SPECGETTY_KEY_ALIAS: ${{ secrets.SPECGETTY_KEY_ALIAS }}
+          SPECGETTY_KEY_PASSWORD: ${{ secrets.SPECGETTY_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          nix develop --command ./gradlew assembleRelease
+          version="${GITHUB_REF_NAME#v}"
+          built="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$built" ]; then
+            echo "release: $built does not exist, so the build produced an unsigned APK" >&2
+            exit 1
+          fi
+          mv "$built" "$RUNNER_TEMP/specgetty-on-droid-${version}.apk"
+
+      - name: Forget the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
+            "$RUNNER_TEMP/specgetty-on-droid-${version}.apk"

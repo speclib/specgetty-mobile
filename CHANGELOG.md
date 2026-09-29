@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Releases. A tagged version is built, signed and published with an APK you can
+  install, and its notes come from this file. A tag that disagrees with what the
+  app is built as is refused rather than published.
+- Every push is checked in public, and the repository shows what it is made of:
+  its specs, its requirements, its open tasks and its test coverage.
 - Authorizing a private GitHub repository from the app, instead of typing an
   access token. The credential is read-only, expires in about eight hours and
   renews itself. The app reads back which repositories it actually reaches and

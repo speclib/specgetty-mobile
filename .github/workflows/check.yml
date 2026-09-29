@@ -1,0 +1,80 @@
+# The gate, run where everyone can see it.
+#
+# It runs `scripts/gate.sh` rather than a workflow that reproduces its steps.
+# A workflow that reproduced them would be a second opinion about whether the
+# tree is good, and two gates that can disagree are worse than one: the
+# disagreement is found when a change is already believed to be finished.
+#
+# The gate is in two halves because gradle needs network access to resolve
+# dependencies, which a sandboxed derivation does not get. Both halves run here.
+name: Check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# A branch pushed twice in a minute does not need both runs finishing. The
+# newer commit is the question worth answering.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install nix
+        uses: DeterminateSystems/nix-installer-action@v16
+
+      # Caches the wrapper distribution and the resolved dependencies, which are
+      # the two largest downloads a cold runner pays for. The Android SDK
+      # closure is deliberately not cached: caching it means a nix binary cache,
+      # and the SDK is unfree, so pushing Google's artefacts to a public cache is
+      # a redistribution question this project does not need to answer while the
+      # runner minutes are free.
+      - name: Cache the gradle home
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run the gate
+        run: bash scripts/gate.sh
+
+      # A debug build, not a way to install the app. It carries the Android
+      # SDK's debug key, which is public and is not the key a release carries,
+      # so a device holding one refuses the other and the refusal takes the
+      # repository list and its credentials with it. It is kept because putting
+      # a pull request on a phone is worth doing. The README does not offer it.
+      - name: Keep the debug build
+        uses: actions/upload-artifact@v4
+        with:
+          name: specgetty-debug-build-not-a-release
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+      # The number the gate measured, kept for the badge job to publish. The
+      # gate verifies coverage but does not report it, so the report is written
+      # here; the unit tests it needs already ran, so this costs a report and
+      # not a second test run.
+      - name: Record the coverage the gate measured
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          nix develop --command ./gradlew jacocoTestReport
+          total=$(bash scripts/coverage.sh | grep -oE '[0-9.]+')
+          echo "Coverage measured by the gate: ${total}%"
+          mkdir -p badge
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"brightgreen"}\n' \
+            "$total" > badge/coverage.json
+
+      - name: Keep it for the badge job
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-badge
+          path: badge/coverage.json
+          retention-days: 1

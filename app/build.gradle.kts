@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -27,6 +29,11 @@ private val coverageExclusions = listOf(
     "io/github/mipmip/specgettyondroid/store/RepoRegistryKt*",
 )
 
+private val releaseKeystore: File? =
+    System.getenv("SPECGETTY_KEYSTORE")
+        ?.let { File(it) }
+        ?.takeIf { it.isFile }
+
 private val corePackages = listOf(
     "io.github.mipmip.specgettyondroid.spec",
     "io.github.mipmip.specgettyondroid.tasks",
@@ -52,10 +59,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = System.getenv("SPECGETTY_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("SPECGETTY_KEY_ALIAS")
+                keyPassword = System.getenv("SPECGETTY_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -204,4 +223,14 @@ tasks.register<JacocoCoverageVerification>("jacocoCoverageVerification") {
             }
         }
     }
+}
+
+tasks.register("printVersion") {
+    group = "help"
+    description = "Prints the versionCode and versionName this build resolves."
+
+    val code = android.defaultConfig.versionCode
+    val name = android.defaultConfig.versionName
+
+    doLast { println("$code $name") }
 }

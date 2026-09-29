@@ -38,7 +38,7 @@ alternative is a user discovering it.
 
 | Workflow | Runs on | Does |
 |----------|---------|------|
-| Check    | every push and pull request | both halves of `scripts/gate.sh`, and keeps the debug APK |
+| Check    | every push and pull request | both halves of `scripts/gate.sh`, and keeps the debug build |
 | Badges   | after a successful Check on `main` | publishes the OpenSpec metrics and the coverage number to `gh-pages` |
 | Release  | a `v*` tag | checks the tag against the build, then builds, signs and uploads the APK |
 
@@ -56,7 +56,22 @@ than beside it, so nothing describes a commit the gate rejected.
 
 Release refuses to publish a tag that disagrees with the tree: `v0.1.0` requires
 `versionName` to be `0.1.0` and `CHANGELOG.md` to have an entry for it. A
-release whose notes do not exist is a release nobody can read.
+release whose notes do not exist is a release nobody can read. It also requires
+`versionCode` to be greater than the one the previous tag published, because
+Android refuses an update whose `versionCode` did not increase, and a release
+that cannot be installed over its predecessor is found by the person it fails.
+
+**The debug build Check keeps is not an install.** It carries the SDK's debug
+key, which is public and is not the key a release carries, so installing it and
+then installing a release means the same refusal the F-Droid decision above
+accepts once. It stays because it is worth having a build of a pull request to
+put on a phone, and it is named and described as what it is. The README does not
+offer it as a way to get the app.
+
+**The keystore has one copy that matters.** Losing it ends the ability to update
+anyone who installed from a release, and the only remedy is a new application ID,
+which `BRIEFING.md` says is permanent once published. Where the backup lives is
+written down in the audit rather than remembered.
 
 **The coverage number is taken, not measured again.** `jacocoCoverageVerification`
 only passes or fails, so a script reads the percentage out of the jacoco XML
