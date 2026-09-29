@@ -2,7 +2,9 @@ package io.github.mipmip.specgettyondroid.project
 
 import io.github.mipmip.specgettyondroid.repo.ARCHIVE_DIR
 import io.github.mipmip.specgettyondroid.repo.OpenSpecLayout
+import io.github.mipmip.specgettyondroid.repo.RepoError
 import io.github.mipmip.specgettyondroid.repo.RepoResult
+import io.github.mipmip.specgettyondroid.repo.StoreDeclarations
 import io.github.mipmip.specgettyondroid.tasks.TaskParser
 import org.yaml.snakeyaml.LoaderOptions
 import org.yaml.snakeyaml.Yaml
@@ -19,10 +21,19 @@ object ProjectLoader {
     private const val CHANGE_CONFIG = ".openspec.yaml"
     private val DATE_PREFIX = Regex("""^(\d{4})-(\d{2})-(\d{2})-(.+)$""")
 
-    fun load(workingDir: File): RepoResult<ProjectInfo> =
-        when (val found = OpenSpecLayout.projectDir(workingDir)) {
+    fun load(workingDir: File, path: String = ""): RepoResult<ProjectInfo> =
+        when (val found = OpenSpecLayout.projectDir(workingDir, path)) {
             is RepoResult.Failure -> found
-            is RepoResult.Success -> RepoResult.Success(loadProject(found.value))
+            is RepoResult.Success -> {
+                val declaration = StoreDeclarations.unresolvable(found.value)
+                if (declaration != null) {
+                    RepoResult.Failure(
+                        RepoError.PointsElsewhere(StoreDeclarations.describe(declaration)),
+                    )
+                } else {
+                    RepoResult.Success(loadProject(found.value))
+                }
+            }
         }
 
     fun loadProject(projectDir: File): ProjectInfo {

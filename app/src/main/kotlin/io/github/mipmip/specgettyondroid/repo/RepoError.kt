@@ -9,6 +9,21 @@ sealed interface RepoError {
 
     data class NoOpenSpecProject(override val message: String) : RepoError
 
+    /**
+     * The host accepted the credential and refused the repository. Distinct
+     * from [Authentication] because the credential is not what is wrong, and
+     * telling the person to check it sends them to fix the one thing that is
+     * fine.
+     */
+    data class NoAccessToRepository(override val message: String) : RepoError
+
+    /**
+     * The project is real and its content is held somewhere this app cannot
+     * reach. Distinct from [NoOpenSpecProject] because there is a project here,
+     * and saying there is not sends a person looking for the wrong thing.
+     */
+    data class PointsElsewhere(override val message: String) : RepoError
+
     data class Unknown(override val message: String) : RepoError
 }
 

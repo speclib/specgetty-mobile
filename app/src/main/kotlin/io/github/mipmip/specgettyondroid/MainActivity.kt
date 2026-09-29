@@ -24,12 +24,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         shared.value = sharedText(intent)
-        val projects = (application as SpecgettyApplication).projects
+        val app = application as SpecgettyApplication
         setContent {
             SpecgettyTheme {
                 val incoming by shared.collectAsStateWithLifecycle()
                 SpecgettyNavHost(
-                    projects = projects,
+                    projects = app.projects,
+                    deviceFlow = app.deviceFlow,
+                    installations = app.installations,
                     sharedText = incoming,
                     onSharedTextHandled = { shared.value = null },
                 )

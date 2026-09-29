@@ -35,6 +35,10 @@ person confirms. The URL MAY be typed, pasted, scanned from a QR code or shared
 in from another application, and every one of those SHALL end at the same form,
 filled in and editable.
 
+Where the host supports it, the screen SHALL also offer to obtain the credential
+by authorizing rather than by typing one. Typing SHALL remain available on every
+host.
+
 #### Scenario: Adding a public repository
 
 - **WHEN** an HTTPS URL is entered and confirmed
@@ -91,6 +95,33 @@ filled in and editable.
 
 - **WHEN** a captured URL carries embedded credentials or a token parameter
 - **THEN** the token field stays empty and the credentials are not stored
+
+#### Scenario: Authorizing is offered where it works
+
+- **WHEN** the URL in the form is one the app can authorize for
+- **THEN** the form offers to authorize as well as to type a token
+
+#### Scenario: Authorizing is not offered where it does not
+
+- **WHEN** the URL is for a host the app cannot authorize for
+- **THEN** only typing is offered, with no mention of a feature that will not
+  work here
+
+#### Scenario: A credential that was authorized
+
+- **WHEN** authorization succeeds for the URL in the form
+- **THEN** the form shows that a credential is held, without showing it
+- **AND** nothing is added until the person confirms
+
+#### Scenario: Abandoning the authorization
+
+- **WHEN** the person starts authorizing and backs out
+- **THEN** the form is as it was, and nothing has been added or stored
+
+#### Scenario: Neither a token nor an authorization
+
+- **WHEN** a private repository is added with no credential at all
+- **THEN** it fails as it does today, saying the authentication failed
 
 ### Requirement: The list can be refreshed
 

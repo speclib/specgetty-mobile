@@ -11,6 +11,8 @@ import io.github.mipmip.specgettyondroid.repo.RepoStore
 import io.github.mipmip.specgettyondroid.store.RepoCatalog
 import io.github.mipmip.specgettyondroid.store.RepoConfig
 import io.github.mipmip.specgettyondroid.store.RepoList
+import io.github.mipmip.specgettyondroid.store.entryIdFor
+import io.github.mipmip.specgettyondroid.store.normalisePath
 import io.github.mipmip.specgettyondroid.store.repoIdFor
 import io.github.mipmip.specgettyondroid.ui.SpecgettyNavHost
 import io.github.mipmip.specgettyondroid.ui.theme.SpecgettyTheme
@@ -124,7 +126,7 @@ class ScreenshotTest {
 
     @Test
     fun takeTheScreenshots() {
-        compose.setContent { SpecgettyTheme { SpecgettyNavHost(repository) } }
+        compose.setContent { SpecgettyTheme { SpecgettyNavHost(repository, OfflineAuth.deviceFlow, OfflineAuth.installations) } }
 
         compose.awaitDescription("Add a repository")
         compose.firstWithDescription("Add a repository").performClick()
@@ -273,13 +275,19 @@ private class ShotCatalog : RepoCatalog {
 
     override suspend fun current(): RepoList = repos.first()
 
-    override suspend fun add(url: String, label: String, token: String?): RepoConfig {
+    override suspend fun add(
+        url: String,
+        label: String,
+        token: String?,
+        path: String,
+    ): RepoConfig {
         val trimmed = url.trim()
         val config = RepoConfig(
-            id = repoIdFor(trimmed),
+            id = entryIdFor(trimmed, normalisePath(path)),
             // A name a reader recognises, rather than `repo.git` from the URL.
             label = label.ifBlank { "specgetty" },
             url = trimmed,
+            path = normalisePath(path),
         )
         state.update { it.add(config) }
         return config

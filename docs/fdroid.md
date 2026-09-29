@@ -73,11 +73,109 @@ can be shared in from a browser or a forge app.
 `ACTION_VIEW` for `https` is deliberately **not** claimed. It would put this app
 in the chooser for every link tapped on the phone, which would be hostile.
 
-## No network beyond git
+## What the app talks to
 
-The app speaks to one host: the one in the repository URL a person typed. There
-is no telemetry endpoint, no update check and no crash reporter. The GitHub API
-is not used; plain git is the data layer, as `BRIEFING.md` requires.
+There is no telemetry endpoint, no update check and no crash reporter, and no
+analytics of any kind.
+
+Reading a project speaks git and nothing else, to one host: the one in the
+repository URL a person typed. Not one byte of a spec, a change or a task list
+comes from an API.
+
+Authorizing a private GitHub repository is the one exception, and it is opt in.
+A person who types an access token, or who reads only public repositories, never
+reaches any of it. When the button is used, the app calls exactly four
+addresses:
+
+| Address | When | Why |
+|---|---|---|
+| `https://github.com/login/device/code` | The button is tapped | Asks for the short code the person types on github.com |
+| `https://github.com/login/oauth/access_token` | Every few seconds while waiting, and again when a credential is close to expiring | Collects the credential once it is approved, and renews it |
+| `https://api.github.com/user/installations` | Once, straight after approval | Reads which repositories the credential reaches, so the app can say what was granted instead of guessing |
+| `https://api.github.com/user/installations/{id}/repositories` | Once, straight after the call above | Names those repositories |
+
+The cloning that follows is plain git over HTTPS, the same call an unauthorized
+clone makes, with the credential as the password.
+
+`BRIEFING.md` records this as an amendment to its own non-goal: the GitHub API
+is used for authentication, and for nothing else.
+
+## The GitHub App, and its client id
+
+`GITHUB_CLIENT_ID` in `auth/DeviceFlow.kt` is a public identifier, committed on
+purpose.
+
+It has to be. GitHub's web flow needs a client secret to exchange a code, and
+PKCE is not offered as a replacement, so a FOSS app that ships its source cannot
+use that flow at all. The device flow needs only the client id, which GitHub
+documents as public.
+
+What the app asks for:
+
+| Permission | Level |
+|---|---|
+| Repository contents | Read-only |
+| Repository metadata | Read-only |
+
+Nothing else. No write anywhere, no organization permissions, no account
+permissions, no webhook. A credential this app holds cannot change a repository.
+
+Approving on github.com is only half of it: GitHub separately asks which
+repositories the app may see, and a person may choose none. The app reads the
+answer back and says so, rather than reporting success and failing at the clone.
+
+To build with your own app instead: register a GitHub App with those two
+permissions, no webhook, device flow enabled, and replace that one constant. No
+other change is needed, and no secret is introduced by doing so.
+
+## What trusting this app means
+
+The app is registered as a public GitHub App, which it has to be. A private one
+installs only on the account that owns it, so every user other than its owner
+would be unable to install it at all. Public means anyone may install it on
+their own account or on an organization they can install to. Nobody who installs
+it gains anything over the app's registration: its settings, its ownership and
+its keys stay where they are.
+
+A credential the app holds is issued to one person, expires in about eight
+hours, and reaches only the repositories that person chose. It can read those
+and nothing else, and it can write nothing at all.
+
+What it cannot do is remove the app's owner from the picture, and pretending
+otherwise would be dishonest. Every GitHub App has an owner, and an owner may
+generate a private key for it. A private key mints installation tokens without
+the installing person present, and those tokens reach every repository the app
+is installed on. That is how GitHub Apps work, and no amount of care on the
+client can design it away.
+
+What can be said, and checked:
+
+- No private key has been generated for this app. An owner can see this on the
+  app's settings page, where the key list is empty.
+- Generating one would be a deliberate act, not a side effect of a release.
+- Nothing in this repository could use a private key if one existed. There is no
+  server, and the app makes the four calls named above and no others.
+- A person who would rather not extend that trust has two ways out that need no
+  permission from anyone: type a personal access token instead, which involves
+  no app at all, or register their own GitHub App and rebuild with its client
+  id, as described above.
+
+Installing on an organization needs an owner of that organization to approve it,
+which is the organization's decision rather than this app's.
+
+A release build carries no other credential. Checking it:
+
+```bash
+APK=app/build/outputs/apk/release/app-release-unsigned.apk
+for d in $(unzip -Z1 "$APK" | grep '^classes.*\.dex$'); do
+  unzip -p "$APK" "$d" | strings -n 4 | grep -i secret
+done
+```
+
+Every hit is a Java cryptography API name: `SecretKey`, `SecretKeySpec`,
+`SecretKeyFactory`, `KeyStore$SecretKeyEntry`. Those come from the token vault
+and from JGit's commit signing, and none of them is a stored credential. The
+client id itself appears exactly once.
 
 ## Binaries in the repository
 

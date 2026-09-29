@@ -27,6 +27,11 @@ import java.util.concurrent.Executors
 class GitHttpServer(
     private val workTree: File,
     private val requiredToken: String? = null,
+    /**
+     * Answer 404 to everything, which is what GitHub does for a private
+     * repository a credential cannot see rather than admitting it exists.
+     */
+    private val hidden: Boolean = false,
 ) {
     private val socket = ServerSocket(0, 0, InetAddress.getByName("127.0.0.1"))
     private val pool = Executors.newCachedThreadPool()
@@ -65,6 +70,11 @@ class GitHttpServer(
 
         if (requiredToken != null && !authorised(headers)) {
             respond(connection, 401, "text/plain", "unauthorized".toByteArray(), authRequired = true)
+            return@use
+        }
+
+        if (hidden) {
+            respond(connection, 404, "text/plain", "Not Found".toByteArray())
             return@use
         }
 

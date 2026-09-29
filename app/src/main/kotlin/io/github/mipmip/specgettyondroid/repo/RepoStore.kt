@@ -6,6 +6,7 @@ import kotlinx.coroutines.withContext
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.api.errors.TransportException
+import org.eclipse.jgit.errors.NoRemoteRepositoryException
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
@@ -37,7 +38,7 @@ class RepoStore(
                 RepoResult.Success(target)
             } catch (e: Exception) {
                 target.deleteRecursively()
-                RepoResult.Failure(classify(e))
+                RepoResult.Failure(classify(e, token))
             }
         }
 
@@ -71,7 +72,7 @@ class RepoStore(
                 }
                 RepoResult.Success(target)
             } catch (e: Exception) {
-                RepoResult.Failure(classify(e))
+                RepoResult.Failure(classify(e, token))
             }
         }
 
@@ -81,7 +82,12 @@ class RepoStore(
         return target.deleteRecursively()
     }
 
-    fun projectDir(id: String): RepoResult<File> = OpenSpecLayout.projectDir(workingDir(id))
+    fun projectDir(id: String, path: String = ""): RepoResult<File> =
+        OpenSpecLayout.projectDir(workingDir(id), path)
+
+    /** Every project the working copy holds, for choosing between them. */
+    fun discover(id: String): List<DiscoveredProject> =
+        OpenSpecLayout.discover(workingDir(id))
 
     private fun remoteTip(repository: Repository, branch: String): String? {
         val candidates = listOf(
@@ -95,7 +101,8 @@ class RepoStore(
         token?.takeIf { it.isNotBlank() }
             ?.let { UsernamePasswordCredentialsProvider(it, "") }
 
-    private fun classify(e: Exception): RepoError {
+    /** Internal so the wording a real host sends can be pinned by a test. */
+    internal fun classify(e: Exception, token: String? = null): RepoError {
         val text = buildString {
             var cause: Throwable? = e
             while (cause != null) {
@@ -106,7 +113,23 @@ class RepoStore(
         }.lowercase()
 
         return when {
+            // Before the authentication markers, which include 403: this is a
+            // 403 too, and the credential is not what is wrong.
+            NO_ACCESS_MARKERS.any { it in text } -> RepoError.NoAccessToRepository(
+                "the credential does not reach this repository",
+            )
+
             AUTH_MARKERS.any { it in text } -> RepoError.Authentication(authMessage(text))
+
+            // GitHub answers 404 rather than 403 for a private repository a
+            // credential cannot see, so as not to reveal that it exists. With a
+            // credential in hand the host was plainly reached, and what is
+            // missing is access rather than a connection.
+            hasMissingRemote(e) && !token.isNullOrBlank() ->
+                RepoError.NoAccessToRepository(
+                    "the credential does not reach this repository",
+                )
+
             hasUnknownHost(e) || NETWORK_MARKERS.any { it in text } ->
                 RepoError.Network(e.message ?: "the repository could not be reached")
 
@@ -125,6 +148,20 @@ class RepoStore(
         else -> "authentication failed"
     }
 
+    /**
+     * Matched on the type rather than the wording. The recorded message carries
+     * the URL, and an ephemeral port such as `127.0.0.1:40412` contains the
+     * digits a status-code match would have tripped over.
+     */
+    private fun hasMissingRemote(e: Throwable): Boolean {
+        var cause: Throwable? = e
+        while (cause != null) {
+            if (cause is NoRemoteRepositoryException) return true
+            cause = cause.cause?.takeIf { it !== cause }
+        }
+        return false
+    }
+
     private fun hasUnknownHost(e: Throwable): Boolean {
         var cause: Throwable? = e
         while (cause != null) {
@@ -135,6 +172,17 @@ class RepoStore(
     }
 
     private companion object {
+        /**
+         * What GitHub says when a token is valid but carries no grant on the
+         * repository. The wording is the host's: it mentions write access even
+         * for a read, because that is the message it sends when an app token
+         * has no applicable permission. Recorded from a real refusal rather
+         * than guessed at.
+         */
+        val NO_ACCESS_MARKERS = listOf(
+            "write access to repository not granted",
+            "resource not accessible by integration",
+        )
         val AUTH_MARKERS = listOf(
             "not authorized",
             "authentication is required",
@@ -152,5 +200,6 @@ class RepoStore(
             "no route to host",
             "cannot open git-upload-pack",
         )
+
     }
 }

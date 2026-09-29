@@ -11,6 +11,8 @@ import io.github.mipmip.specgettyondroid.store.RepoCatalog
 import io.github.mipmip.specgettyondroid.store.RepoConfig
 import io.github.mipmip.specgettyondroid.store.RepoList
 import io.github.mipmip.specgettyondroid.store.labelFor
+import io.github.mipmip.specgettyondroid.store.entryIdFor
+import io.github.mipmip.specgettyondroid.store.normalisePath
 import io.github.mipmip.specgettyondroid.store.repoIdFor
 import io.github.mipmip.specgettyondroid.ui.SpecgettyNavHost
 import io.github.mipmip.specgettyondroid.ui.theme.SpecgettyTheme
@@ -104,7 +106,7 @@ class EndToEndTest {
 
     private fun start() {
         compose.setContent {
-            SpecgettyTheme { SpecgettyNavHost(repository) }
+            SpecgettyTheme { SpecgettyNavHost(repository, OfflineAuth.deviceFlow, OfflineAuth.installations) }
         }
     }
 
@@ -295,25 +297,35 @@ private class InMemoryCatalog : RepoCatalog {
 
     override suspend fun current(): RepoList = repos.first()
 
-    override suspend fun add(url: String, label: String, token: String?): RepoConfig {
+    override suspend fun add(
+        url: String,
+        label: String,
+        token: String?,
+        path: String,
+    ): RepoConfig {
         val trimmed = url.trim()
+        val cleaned = normalisePath(path)
         val config = RepoConfig(
-            id = repoIdFor(trimmed),
+            id = entryIdFor(trimmed, cleaned),
             url = trimmed,
-            label = label.ifBlank { labelFor(trimmed) },
-            hasToken = !token.isNullOrBlank(),
+            label = label.ifBlank { if (cleaned.isEmpty()) labelFor(trimmed) else cleaned },
+            hasToken = !token.isNullOrBlank() || tokens.containsKey(repoIdFor(trimmed)),
+            path = cleaned,
         )
-        if (!token.isNullOrBlank()) tokens[config.id] = token
+        if (!token.isNullOrBlank()) tokens[repoIdFor(trimmed)] = token
         state.update { it.add(config) }
         return config
     }
 
     override suspend fun remove(id: String) {
-        tokens.remove(id)
+        val list = current()
+        val going = list.repos.firstOrNull { it.id == id }
+        if (going != null && !list.othersShare(id)) tokens.remove(going.cloneId)
         state.update { it.remove(id) }
     }
 
     override suspend fun activate(id: String) = state.update { it.activate(id) }
 
-    override suspend fun tokenFor(id: String): String? = tokens[id]
+    override suspend fun tokenFor(id: String): String? =
+        tokens[current().repos.firstOrNull { it.id == id }?.cloneId ?: id]
 }

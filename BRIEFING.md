@@ -46,8 +46,10 @@ handle the same way. Do not derive the grammar from this briefing.
   private repos. QR scan, paste and share-into work as in beans-on-droid.
 - Shallow clone (`depth 1`) into app-private storage.
 - Refresh via pull-to-refresh: fetch plus hard reset to the remote branch.
-- One project per repo, at `openspec/` in the repo root. No directory scanning
-  and no store resolution.
+- The projects a repo holds, each at an `openspec/` directory holding a config
+  or a project file. A repo with one is added as one row, as before; a repo with
+  several asks which to add, and each chosen one is its own row sharing the one
+  clone. No store resolution.
 - Load the project into an in-memory index on each clone or refresh. Parse specs
   and deltas lazily, when they are opened.
 
@@ -96,10 +98,20 @@ the same as an empty project.
 
 - No editing, ticking tasks, archiving, discarding, exporting, committing or
   pushing.
-- No store resolution and no scanning for nested `openspec/` directories.
+- No store resolution. The scanning half of this non-goal is amended: a repo is
+  swept for the projects it holds, because one repo can hold several and reading
+  only its root made every one of them unreachable. Resolving a `store:`
+  declaration stays out, and cannot be otherwise: a declaration is followed
+  through a registry of local paths on the machine that wrote it, and a phone
+  has neither. Such a declaration is reported, naming the id and the file, and
+  never presented as an absent project.
 - No calls to the `openspec` CLI. Schemas are shown by name only.
 - No SSH authentication.
-- No GitHub API usage. Plain git is the data layer.
+- No GitHub API usage for repository data. Plain git is the data layer: not one
+  byte of a spec, a change or a task list comes from an API. Authentication is
+  the exception, added after the first release: obtaining a credential by
+  authorizing on github.com uses that host's endpoints, and checking which
+  repositories the credential reaches uses one more. Nothing else may.
 - No background sync or notifications.
 
 ## Tech stack

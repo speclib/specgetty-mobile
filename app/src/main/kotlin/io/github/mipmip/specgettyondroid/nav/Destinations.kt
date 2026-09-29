@@ -14,6 +14,9 @@ object Destinations {
 
     const val SCANNER = "scanner"
 
+    const val AUTHORIZE_ARG_URL = "repoUrl"
+    const val AUTHORIZE_PATTERN = "authorize/{$AUTHORIZE_ARG_URL}"
+
     const val PROJECT_ARG_REPO = "repoId"
     const val PROJECT_PATTERN = "project/{$PROJECT_ARG_REPO}"
 
@@ -28,6 +31,8 @@ object Destinations {
     const val DELTA_ARG_REPO = "repoId"
     const val DELTA_ARG_NAME = "changeName"
     const val DELTA_PATTERN = "delta/{$DELTA_ARG_REPO}/{$DELTA_ARG_NAME}"
+
+    fun authorize(repoUrl: String): String = "authorize/${encode(repoUrl)}"
 
     fun project(repoId: String): String = "project/${encode(repoId)}"
 

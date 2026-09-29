@@ -1,11 +1,11 @@
 ---
 # specgetty-mobile-m468
 title: support for store only repo's
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-29T09:26:14Z
-updated_at: 2026-09-29T09:28:42Z
+updated_at: 2026-09-29T16:45:00Z
 ---
 
 I have a private repo: /home/pim/gh.nivis-project/nivis-openspec-stores this repo contains multiple stores for multiple projects.

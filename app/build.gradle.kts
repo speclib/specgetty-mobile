@@ -20,6 +20,7 @@ private val coverageExclusions = listOf(
     "io/github/mipmip/specgettyondroid/ui/**",
     "io/github/mipmip/specgettyondroid/MainActivity*",
     "io/github/mipmip/specgettyondroid/SpecgettyApplication*",
+    "io/github/mipmip/specgettyondroid/auth/HttpAuthTransport*",
     "io/github/mipmip/specgettyondroid/repo/AndroidGit*",
     "io/github/mipmip/specgettyondroid/repo/AndroidSystemReader*",
     "io/github/mipmip/specgettyondroid/store/KeystoreTokenVault*",

@@ -176,10 +176,18 @@ keep working until they expire, and the typed path is unaffected.
 
 ## Open Questions
 
-- Whether GitHub returns `verification_uri_complete` for GitHub Apps. If it does,
-  the browser can open on a page with the code already filled in, and the person
-  types nothing at all. This changes the authorization screen's copy and nothing
-  else, so it can be answered when that screen is built.
-- Whether to offer "install on selected repositories" guidance in the screen's
-  copy, given GitHub offers "All repositories" first. A wording question, not a
-  structural one.
+Both were answered while building.
+
+- **Does GitHub return `verification_uri_complete` for GitHub Apps?** No. The
+  spike's recorded response carries `device_code`, `user_code`,
+  `verification_uri`, `expires_in` and `interval`, and nothing else. So the
+  screen shows the code, offers to copy it, and opens the plain
+  `https://github.com/login/device`; the person types the code there. Copying is
+  the closest thing to the prefilled page GitHub does not offer.
+- **Should the screen say anything about choosing repositories?** Yes, twice.
+  Once while waiting, because GitHub asks the question on that same visit and
+  offering "All repositories" first makes it easy to sail past. Once after
+  approval, when `/user/installations` says what was actually granted: a person
+  who chose nothing is told so, with a link to fix it, rather than being
+  congratulated and then failing at the clone. The spike walked into exactly
+  that, twice.

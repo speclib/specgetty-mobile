@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Authorizing a private GitHub repository from the app, instead of typing an
+  access token. The credential is read-only, expires in about eight hours and
+  renews itself. The app reads back which repositories it actually reaches and
+  says so, rather than reporting success and failing at the clone.
+- Several OpenSpec projects in one repository. A repository holding more than
+  one lists them and asks which to add; each chosen project becomes its own row,
+  and the rows share one downloaded copy and one credential. Removing a row
+  leaves both alone while another row from that repository remains.
+- A repository whose `openspec/config.yaml` points at a store now says which
+  store and which file, rather than reporting that there is no project.
 - Project scaffolding: OpenSpec, beans, the nix flake and the ship script.
 - An Android application that builds and installs, showing an empty repository
   list. Nothing can be added to it yet.

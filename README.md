@@ -70,13 +70,84 @@ Three ways in, all ending at the same form:
   you scan, and refusing it leaves everything else working.
 - **Share a link** into the app from a browser or a forge app.
 
-A private repository also needs a personal access token with read access to it.
-Type the token yourself: it is never taken from a scanned code or a shared link,
-because a token on a photographable surface is a token you have given away. It
-is encrypted with a key held in the Android Keystore, kept apart from the list
-of repositories, and deleted with the repository.
-
 SSH URLs are refused with a message saying so. Phase 1 speaks HTTPS only.
+
+## A repository holding several projects
+
+One repository can hold more than one OpenSpec project, one per directory. When
+you add such a repository, the app lists the projects it found and you choose
+which to add. Each chosen project becomes its own row, with its own specs,
+changes and task counts.
+
+A repository holding one project is added straight away, with nothing to choose.
+
+Those rows share one downloaded copy and one credential, because they are one
+repository:
+
+- Refreshing fetches the repository once, however many of its rows are in the
+  list, and reloads all of them.
+- Removing a row frees nothing while another row from the same repository
+  remains. The downloaded copy and the credential go with the last one, and the
+  confirmation says which of the two is about to happen.
+
+A project is found where an `openspec/` directory holds `config.yaml`,
+`config.yml` or `project.md`. A directory named `openspec` holding none of those
+is not offered, so a repository that keeps unrelated files under that name
+contributes nothing.
+
+Which projects a repository holds is settled when you add it. A project added to
+the remote later appears by adding the repository again; the rows you already
+have are left alone.
+
+## A repository that points at a store
+
+A repository whose `openspec/config.yaml` reads `store: <id>` and keeps no specs
+or changes of its own holds no content. It names content kept somewhere else,
+resolved through a registry of local paths on the machine that wrote it. A phone
+has neither that registry nor those paths, so the app cannot follow it.
+
+It says so, naming the id and the file that declared it, rather than claiming
+there is no project. Add the repository that holds the content instead.
+
+## A private repository
+
+There are two ways, and the form offers both.
+
+### Authorize with GitHub
+
+For a repository on github.com. Tap **Or authorize with GitHub instead**. The
+app shows a short code, you open github.com in a browser, type the code, and
+approve.
+
+GitHub then asks a second question: **which repositories** this app may see.
+Approving without choosing any leaves the app able to read nothing, so choose
+the repository you are adding. The app reads the answer back and tells you what
+it was granted, rather than reporting success and failing at the clone.
+
+Choosing "All repositories" covers that account only. A repository owned by an
+organization needs the app installed on the organization as well, which an owner
+there may have to approve. When the app is missing one, it says so and offers
+the page where you add it.
+
+Nothing is added until you press **Add**. Back out at any point and nothing is
+stored.
+
+The credential expires after about eight hours and renews itself before the next
+read, without asking again. It is read-only: it cannot change anything in the
+repository.
+
+### Type an access token
+
+For any host, github.com included. Create a personal access token with read
+access and type it into the form.
+
+Type it yourself: it is never taken from a scanned code or a shared link,
+because a token on a photographable surface is a token you have given away.
+
+### Either way
+
+The credential is encrypted with a key held in the Android Keystore, kept apart
+from the list of repositories, and deleted with the repository.
 
 ## Building
 

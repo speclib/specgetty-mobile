@@ -11,14 +11,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import io.github.mipmip.specgettyondroid.auth.DeviceFlow
+import io.github.mipmip.specgettyondroid.auth.Installations
 import io.github.mipmip.specgettyondroid.data.ProjectRepository
 import io.github.mipmip.specgettyondroid.nav.Destinations
+import io.github.mipmip.specgettyondroid.ui.screen.AuthorizeScreen
 import io.github.mipmip.specgettyondroid.ui.screen.ChangeScreen
 import io.github.mipmip.specgettyondroid.ui.screen.DeltaScreen
 import io.github.mipmip.specgettyondroid.ui.screen.ProjectScreen
 import io.github.mipmip.specgettyondroid.ui.screen.RepoListScreen
 import io.github.mipmip.specgettyondroid.ui.screen.ScannerScreen
 import io.github.mipmip.specgettyondroid.ui.screen.SpecScreen
+import io.github.mipmip.specgettyondroid.viewmodel.AuthorizeViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.ChangeViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.DeltaViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.ProjectViewModel
@@ -28,6 +32,8 @@ import io.github.mipmip.specgettyondroid.viewmodel.SpecViewModel
 @Composable
 fun SpecgettyNavHost(
     projects: ProjectRepository,
+    deviceFlow: DeviceFlow,
+    installations: Installations,
     sharedText: String? = null,
     onSharedTextHandled: () -> Unit = {},
 ) {
@@ -51,6 +57,7 @@ fun SpecgettyNavHost(
                 viewModel = model,
                 onOpenRepo = { navController.navigate(Destinations.project(it)) },
                 onScan = { navController.navigate(Destinations.SCANNER) },
+                onAuthorize = { navController.navigate(Destinations.authorize(it)) },
             )
         }
 
@@ -65,6 +72,36 @@ fun SpecgettyNavHost(
             ScannerScreen(
                 onResult = {
                     model.openForm(it)
+                    navController.popBackStack()
+                },
+                onDismiss = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = Destinations.AUTHORIZE_PATTERN,
+            arguments = listOf(
+                navArgument(Destinations.AUTHORIZE_ARG_URL) { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val repoUrl = Destinations.decode(
+                entry.arguments?.getString(Destinations.AUTHORIZE_ARG_URL).orEmpty(),
+            )
+            // The list's own view model, so the credential lands in the form
+            // that is still open behind this screen.
+            val parent = remember(entry) {
+                navController.getBackStackEntry(Destinations.REPO_LIST)
+            }
+            val list: RepoListViewModel =
+                viewModel(viewModelStoreOwner = parent, factory = RepoListViewModel.factory(projects))
+            val model: AuthorizeViewModel = viewModel(
+                factory = AuthorizeViewModel.factory(deviceFlow, installations, repoUrl),
+            )
+
+            AuthorizeScreen(
+                viewModel = model,
+                onAuthorized = {
+                    list.onAuthorized(it)
                     navController.popBackStack()
                 },
                 onDismiss = { navController.popBackStack() },

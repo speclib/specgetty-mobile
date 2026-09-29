@@ -73,6 +73,12 @@ class ProjectViewModel(
                 is RepoError.Authentication -> "Authentication failed. Check the access token."
                 is RepoError.Network -> "The repository could not be reached."
                 is RepoError.NoOpenSpecProject -> "No OpenSpec project here"
+                is RepoError.NoAccessToRepository ->
+                    "The authorization does not cover this repository. " +
+                        "Choose it on GitHub, or use an access token."
+
+                is RepoError.PointsElsewhere -> e.message
+
                 is RepoError.Unknown -> e.message
             }
         }
