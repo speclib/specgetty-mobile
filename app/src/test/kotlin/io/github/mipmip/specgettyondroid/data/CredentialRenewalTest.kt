@@ -135,7 +135,11 @@ class CredentialRenewalTest {
         assertTrue(repository.stateOf(config.id) is ProjectState.Loaded)
     }
 
-    /** A refused renewal says to authorize again, not that the token is wrong. */
+    /**
+     * A refused renewal says to authorize again, not that the token is wrong.
+     * Nothing was fetched, so the project the reader has stays where it is and
+     * the reason is reported beside it.
+     */
     @Test
     fun `a refused renewal asks for authorization rather than blaming the token`() = runTest {
         val remote = LocalRemote(temp.newFolder("remote")).init()
@@ -150,13 +154,15 @@ class CredentialRenewalTest {
                 refreshToken = "ghr_first",
             ),
         )
+        assertTrue(repository.stateOf(config.id) is ProjectState.Loaded)
 
         clock += 28_860_000
         repository.refresh(config.id)
 
         val state = repository.stateOf(config.id)
-        assertTrue("$state", state is ProjectState.Failed)
-        val error = (state as ProjectState.Failed).error
+        assertTrue("$state", state is ProjectState.Loaded)
+
+        val error = repository.outcomes.value.getValue(config.cloneId)
         assertTrue("$error", error is RepoError.Authentication)
         assertTrue(error.message, error.message.contains("Authorize"))
     }

@@ -11,14 +11,18 @@ import io.github.mipmip.specgettyondroid.data.ProjectState
 import io.github.mipmip.specgettyondroid.index.ProjectCounts
 import io.github.mipmip.specgettyondroid.repo.RepoError
 import io.github.mipmip.specgettyondroid.repo.RepoResult
+import io.github.mipmip.specgettyondroid.repo.explanation
 import io.github.mipmip.specgettyondroid.store.Credential
 import io.github.mipmip.specgettyondroid.store.RepoConfig
 import io.github.mipmip.specgettyondroid.store.RepoUrl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,6 +31,8 @@ data class RepoRow(
     val config: RepoConfig,
     val state: ProjectState,
     val isActive: Boolean,
+    /** Its working copy is being fetched, whichever screen asked for it. */
+    val isRefreshing: Boolean = false,
 ) {
     val counts: ProjectCounts? get() = (state as? ProjectState.Loaded)?.index?.counts
 
@@ -40,19 +46,7 @@ data class RepoRow(
             is ProjectState.Absent -> "Not loaded yet"
             is ProjectState.Loading -> "Loading"
             is ProjectState.NoProject -> "No OpenSpec project here"
-            is ProjectState.Failed -> when (val e = state.error) {
-                is RepoError.Authentication -> "Authentication failed. Check the access token."
-                is RepoError.Network -> "The repository could not be reached."
-                is RepoError.NoOpenSpecProject -> "No OpenSpec project here"
-                is RepoError.NoAccessToRepository ->
-                    "The authorization does not cover this repository. " +
-                        "Choose it on GitHub, or use an access token."
-
-                is RepoError.PointsElsewhere -> e.message
-
-                is RepoError.Unknown -> e.message
-            }
-
+            is ProjectState.Failed -> state.error.explanation
             is ProjectState.Loaded -> null
         }
 }
@@ -112,8 +106,23 @@ class RepoListViewModel(
     private val _formOpen = MutableStateFlow(false)
     val formOpen: StateFlow<Boolean> = _formOpen.asStateFlow()
 
-    private val _refreshing = MutableStateFlow(false)
-    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+    /**
+     * Held across a pull of the whole list, which is several fetches. The
+     * repository's own set empties between them, and the indicator should not
+     * blink in the gaps.
+     */
+    private val _refreshingAll = MutableStateFlow(false)
+
+    val refreshing: StateFlow<Boolean> =
+        combine(_refreshingAll, repository.refreshing) { all, clones ->
+            all || clones.isNotEmpty()
+        }.stateIn(scope, SharingStarted.Eagerly, false)
+
+    /** Why a refresh failed, for the list to tell. Cleared once told. */
+    val failure: StateFlow<RefreshFailure?> =
+        repository.outcomes.map { errors ->
+            errors.entries.firstOrNull()?.let { RefreshFailure(it.key, it.value) }
+        }.stateIn(scope, SharingStarted.Eagerly, null)
 
     /** A repository holding several projects, waiting to be chosen from. */
     private val _choice = MutableStateFlow<ProjectChoice?>(null)
@@ -125,12 +134,17 @@ class RepoListViewModel(
 
     init {
         scope.launch {
-            combine(repository.repos, repository.states) { list, states ->
+            combine(
+                repository.repos,
+                repository.states,
+                repository.refreshing,
+            ) { list, states, clones ->
                 list.repos.map { config ->
                     RepoRow(
                         config = config,
                         state = states[config.id] ?: ProjectState.Absent,
                         isActive = config.id == list.activeId,
+                        isRefreshing = config.cloneId in clones,
                     )
                 }
             }.collect { rows -> _rows.value = rows }
@@ -269,8 +283,8 @@ class RepoListViewModel(
     }
 
     fun refreshAll() {
-        if (_refreshing.value) return
-        _refreshing.value = true
+        if (_refreshingAll.value) return
+        _refreshingAll.value = true
         scope.launch {
             try {
                 // One fetch per repository, not per row. Refreshing an entry
@@ -279,9 +293,14 @@ class RepoListViewModel(
                     .distinctBy { it.config.cloneId }
                     .forEach { repository.refresh(it.config.id) }
             } finally {
-                _refreshing.value = false
+                _refreshingAll.value = false
             }
         }
+    }
+
+    /** Told once, so returning to the list does not repeat it. */
+    fun failureShown(cloneId: String) {
+        repository.clearOutcomeOf(cloneId)
     }
 
     fun refresh(id: String) {

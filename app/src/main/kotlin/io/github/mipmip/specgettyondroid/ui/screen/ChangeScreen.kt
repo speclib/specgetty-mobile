@@ -21,19 +21,25 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.mipmip.specgettyondroid.project.Capability
 import io.github.mipmip.specgettyondroid.tasks.TaskItem
+import io.github.mipmip.specgettyondroid.tasks.TaskStats
 import io.github.mipmip.specgettyondroid.ui.MarkdownText
+import io.github.mipmip.specgettyondroid.ui.PullableColumn
+import io.github.mipmip.specgettyondroid.ui.Refreshable
 import io.github.mipmip.specgettyondroid.viewmodel.ArtifactContent
 import io.github.mipmip.specgettyondroid.viewmodel.ChangeTab
 import io.github.mipmip.specgettyondroid.viewmodel.ChangeViewModel
@@ -51,10 +57,15 @@ fun ChangeScreen(
     viewModel: ChangeViewModel,
     onBack: () -> Unit,
     onOpenDelta: (String) -> Unit,
+    onAuthorize: (() -> Unit)? = null,
 ) {
     val change by viewModel.change.collectAsStateWithLifecycle()
     val tab by viewModel.tab.collectAsStateWithLifecycle()
-    val tabs = viewModel.tabs
+    // Keyed on the change, so that a refresh which adds or removes an artifact
+    // file is read here. A bare getter is not a snapshot read, and this scope
+    // would otherwise keep the tab row the change had when it was opened.
+    val tabs = remember(change) { viewModel.tabs }
+    val host = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -83,36 +94,47 @@ fun ChangeScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(host) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            if (change == null) {
-                Empty("This change is no longer in the project.")
-                return@Column
-            }
-
-            val selected = tab ?: tabs.firstOrNull() ?: return@Column
-            ScrollableTabRow(selectedTabIndex = tabs.indexOf(selected).coerceAtLeast(0)) {
-                tabs.forEach { entry ->
-                    Tab(
-                        selected = entry == selected,
-                        onClick = { viewModel.selectTab(entry) },
-                        text = { Text(entry.label) },
-                    )
+        Refreshable(
+            control = viewModel.refresh,
+            host = host,
+            onAuthorize = onAuthorize,
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                if (change == null) {
+                    Empty("This change is no longer in the project.")
+                    return@Column
                 }
-            }
 
-            when (selected) {
-                is ChangeTab.Artifact -> ArtifactTab(viewModel, selected.fileName)
-                ChangeTab.Tasks -> TasksTab(viewModel)
-                ChangeTab.Specs -> ChangeSpecsTab(viewModel, onOpenDelta)
+                val selected = tab ?: tabs.firstOrNull() ?: return@Column
+                ScrollableTabRow(selectedTabIndex = tabs.indexOf(selected).coerceAtLeast(0)) {
+                    tabs.forEach { entry ->
+                        Tab(
+                            selected = entry == selected,
+                            onClick = { viewModel.selectTab(entry) },
+                            text = { Text(entry.label) },
+                        )
+                    }
+                }
+
+                // Read here rather than inside each tab: a refresh lands while
+                // this screen is composed, and a tab given the same view model
+                // twice would be skipped and go on showing the old file.
+                when (selected) {
+                    is ChangeTab.Artifact -> ArtifactTab(viewModel.artifact(selected.fileName))
+                    ChangeTab.Tasks -> TasksTab(viewModel.taskStats, viewModel.tasks.items)
+                    ChangeTab.Specs -> ChangeSpecsTab(viewModel.capabilities, onOpenDelta)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ArtifactTab(viewModel: ChangeViewModel, fileName: String) {
-    when (val content = viewModel.artifact(fileName)) {
+private fun ArtifactTab(content: ArtifactContent) {
+    when (content) {
         is ArtifactContent.Markdown -> Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         ) {
@@ -124,10 +146,7 @@ private fun ArtifactTab(viewModel: ChangeViewModel, fileName: String) {
 }
 
 @Composable
-private fun TasksTab(viewModel: ChangeViewModel) {
-    val stats = viewModel.taskStats
-    val items = viewModel.tasks.items
-
+private fun TasksTab(stats: TaskStats, items: List<TaskItem>) {
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
@@ -143,7 +162,7 @@ private fun TasksTab(viewModel: ChangeViewModel) {
         }
         HorizontalDivider()
 
-        LazyColumn(contentPadding = PaddingValues(16.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
             var lastHeading: String? = null
             items.forEachIndexed { i, item ->
                 if (item.heading.isNotEmpty() && item.heading != lastHeading) {
@@ -189,13 +208,12 @@ private fun TaskRow(item: TaskItem) {
 }
 
 @Composable
-private fun ChangeSpecsTab(viewModel: ChangeViewModel, onOpenDelta: (String) -> Unit) {
-    val capabilities = viewModel.capabilities
+private fun ChangeSpecsTab(capabilities: List<Capability>, onOpenDelta: (String) -> Unit) {
     if (capabilities.isEmpty()) {
         Empty("This change touches no capability.")
         return
     }
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         items(capabilities, key = { it.name }) { capability ->
             Column(
                 Modifier
@@ -212,11 +230,7 @@ private fun ChangeSpecsTab(viewModel: ChangeViewModel, onOpenDelta: (String) -> 
 
 @Composable
 private fun Empty(message: String) {
-    Column(
-        Modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    PullableColumn {
         Text(message, style = MaterialTheme.typography.bodyLarge)
     }
 }

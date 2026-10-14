@@ -22,12 +22,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,16 +40,24 @@ import io.github.mipmip.specgettyondroid.spec.SpecNode
 import io.github.mipmip.specgettyondroid.spec.SpecProblem
 import io.github.mipmip.specgettyondroid.ui.ListDetail
 import io.github.mipmip.specgettyondroid.ui.MarkdownText
+import io.github.mipmip.specgettyondroid.ui.PullableColumn
+import io.github.mipmip.specgettyondroid.ui.Refreshable
 import io.github.mipmip.specgettyondroid.viewmodel.SpecScreenState
 import io.github.mipmip.specgettyondroid.viewmodel.SpecViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SpecScreen(viewModel: SpecViewModel, onBack: () -> Unit) {
+fun SpecScreen(
+    viewModel: SpecViewModel,
+    onBack: () -> Unit,
+    onAuthorize: (() -> Unit)? = null,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val selected by viewModel.selected.collectAsStateWithLifecycle()
+    val selectionGone by viewModel.selectionGone.collectAsStateWithLifecycle()
     val showingRaw by viewModel.showingRaw.collectAsStateWithLifecycle()
     val rawText by viewModel.rawText.collectAsStateWithLifecycle()
+    val host = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -68,8 +78,15 @@ fun SpecScreen(viewModel: SpecViewModel, onBack: () -> Unit) {
                 },
             )
         },
+        snackbarHost = { SnackbarHost(host) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        Refreshable(
+            control = viewModel.refresh,
+            host = host,
+            onAuthorize = onAuthorize,
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+          Column(Modifier.fillMaxSize()) {
             if (showingRaw) {
                 // Its own level: back returns to the report rather than leaving
                 // the spec, whatever the window's width.
@@ -97,17 +114,27 @@ fun SpecScreen(viewModel: SpecViewModel, onBack: () -> Unit) {
                     }
                 },
                 detail = {
-                    selected?.let {
-                        NodeDetail(
-                            node = it,
-                            hasPrevious = viewModel.hasPrevious,
-                            hasNext = viewModel.hasNext,
-                            onPrevious = viewModel::previous,
-                            onNext = viewModel::next,
-                        )
+                    when {
+                        selectionGone -> PullableColumn {
+                            Text(
+                                "This part of the spec is no longer in the file.",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+
+                        else -> selected?.let {
+                            NodeDetail(
+                                node = it,
+                                hasPrevious = viewModel.hasPrevious,
+                                hasNext = viewModel.hasNext,
+                                onPrevious = viewModel::previous,
+                                onNext = viewModel::next,
+                            )
+                        }
                     }
                 },
             )
+          }
         }
     }
 }
@@ -118,7 +145,7 @@ private fun SpecOutline(
     selected: SpecNode?,
     onSelect: (SpecNode) -> Unit,
 ) {
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         items(nodes.size) { i ->
             val node = nodes[i]
             val indent = if (node.kind == NodeKind.SCENARIO) 24.dp else 0.dp
@@ -190,7 +217,10 @@ private fun NodeDetail(
 
 @Composable
 private fun NodeBody(node: SpecNode, modifier: Modifier = Modifier) {
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+    ) {
         item {
             Text(
                 node.title,
@@ -225,7 +255,7 @@ private fun NodeBody(node: SpecNode, modifier: Modifier = Modifier) {
 
 @Composable
 private fun ProblemReport(problems: List<SpecProblem>, onShowRaw: () -> Unit) {
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         item {
             Column(Modifier.padding(bottom = 12.dp)) {
                 Text(
@@ -261,11 +291,7 @@ private fun ProblemReport(problems: List<SpecProblem>, onShowRaw: () -> Unit) {
 
 @Composable
 private fun Centred(message: String) {
-    Column(
-        Modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    PullableColumn {
         Text(message, style = MaterialTheme.typography.bodyLarge)
     }
 }

@@ -36,3 +36,37 @@ sealed interface RepoResult<out T> {
 fun <T> RepoResult<T>.valueOrNull(): T? = (this as? RepoResult.Success<T>)?.value
 
 fun <T> RepoResult<T>.errorOrNull(): RepoError? = (this as? RepoResult.Failure)?.error
+
+/**
+ * What to tell a person about a failure. One wording per reason, in one place,
+ * so a row, a screen and a refresh that failed all say the same thing.
+ */
+val RepoError.explanation: String
+    get() = when (this) {
+        is RepoError.Authentication -> "Authentication failed. Check the access token."
+        is RepoError.Network -> "The repository could not be reached."
+        is RepoError.NoOpenSpecProject -> "No OpenSpec project here"
+        is RepoError.NoAccessToRepository ->
+            "The authorization does not cover this repository. " +
+                "Choose it on GitHub, or use an access token."
+
+        is RepoError.PointsElsewhere -> message
+        is RepoError.Unknown -> message
+    }
+
+/** What a person can do about a failure, where there is anything to do. */
+enum class RepoRemedy(val label: String) {
+    TRY_AGAIN("Try again"),
+    AUTHORIZE("Authorize"),
+}
+
+/**
+ * The remedy worth offering, or null. A failure that cannot be acted on is
+ * better told plainly than given a button that leads nowhere.
+ */
+val RepoError.remedy: RepoRemedy?
+    get() = when (this) {
+        is RepoError.Network -> RepoRemedy.TRY_AGAIN
+        is RepoError.NoAccessToRepository -> RepoRemedy.AUTHORIZE
+        else -> null
+    }

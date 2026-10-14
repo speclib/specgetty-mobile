@@ -14,11 +14,19 @@ import io.github.mipmip.specgettyondroid.store.RepoConfig
 import io.github.mipmip.specgettyondroid.store.RepoList
 import io.github.mipmip.specgettyondroid.store.repoIdFor
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -30,12 +38,41 @@ class ProjectRepository(
     private val catalog: RepoCatalog,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val tokens: TokenSource? = null,
+    /**
+     * A refresh runs here rather than in the scope of whichever screen asked
+     * for it. A reader who asks for a fetch and then taps back has not
+     * withdrawn the request, and this scope outlives every screen.
+     */
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatcher),
 ) {
 
     private val _states = MutableStateFlow<Map<String, ProjectState>>(emptyMap())
     val states: Flow<Map<String, ProjectState>> = _states.asStateFlow()
 
     private val caches = mutableMapOf<String, SpecCache>()
+
+    /**
+     * A refresh belongs to the working copy it fetches, not to the entry that
+     * asked. Several entries share one, so one fetch serves all of them and a
+     * second ask while one is in flight has nothing to start.
+     */
+    private val jobs = mutableMapOf<String, Job>()
+    private val jobLock = Mutex()
+
+    private val _refreshing = MutableStateFlow<Set<String>>(emptySet())
+
+    /** The working copies being fetched right now, by clone id. */
+    val refreshing: StateFlow<Set<String>> = _refreshing.asStateFlow()
+
+    private val _outcomes = MutableStateFlow<Map<String, RepoError>>(emptyMap())
+
+    /**
+     * Why the last refresh of a working copy failed, held rather than emitted.
+     * A refresh outlives the screen that asked for it, so the screen in front
+     * when it lands may not be the one that asked, and an event would be lost
+     * between the two.
+     */
+    val outcomes: StateFlow<Map<String, RepoError>> = _outcomes.asStateFlow()
 
     val repos: Flow<RepoList> get() = catalog.repos
 
@@ -108,33 +145,65 @@ class ProjectRepository(
         return config
     }
 
+    /**
+     * Ensures a refresh is running for this entry's working copy and waits for
+     * it. Waiting is the caller's, the work is not: a caller that goes away
+     * stops waiting and the fetch runs on to its end.
+     */
     suspend fun refresh(id: String) {
         val config = catalog.current().repos.firstOrNull { it.id == id } ?: return
-        set(id, ProjectState.Loading)
+        jobFor(config).join()
+    }
 
-        val token = when (val held = tokens?.current(config.cloneId)) {
-            null -> catalog.tokenFor(id)
-            else -> when (val problem = held.problem) {
+    private suspend fun jobFor(config: RepoConfig): Job = jobLock.withLock {
+        val running = jobs[config.cloneId]
+        if (running != null && running.isActive) return@withLock running
+
+        _outcomes.update { it - config.cloneId }
+        _refreshing.update { it + config.cloneId }
+        scope.launch {
+            try {
+                runRefresh(config)
+            } finally {
+                _refreshing.update { it - config.cloneId }
+            }
+        }.also { jobs[config.cloneId] = it }
+    }
+
+    private suspend fun runRefresh(config: RepoConfig) {
+        val clone = config.cloneId
+        val entries = entriesOn(clone)
+
+        // Loading means there is nothing to show. An entry already holding an
+        // index keeps it, so that a screen is never asked to unshow a project
+        // it is showing for the length of a fetch.
+        entries.forEach { entry ->
+            if (stateOf(entry.id) !is ProjectState.Loaded) set(entry.id, ProjectState.Loading)
+        }
+
+        val held = tokens?.current(clone)
+        val token: String? = if (held == null) {
+            catalog.tokenFor(config.id)
+        } else {
+            when (val problem = held.problem) {
                 is TokenProblem.NeedsAuthorizing -> {
-                    set(
-                        id,
-                        ProjectState.Failed(
-                            RepoError.Authentication(
-                                "Authorize this repository with GitHub again: ${problem.reason}.",
-                            ),
+                    failed(
+                        clone,
+                        entries,
+                        RepoError.Authentication(
+                            "Authorize this repository with GitHub again: ${problem.reason}.",
                         ),
                     )
                     return
                 }
 
                 is TokenProblem.Unreachable -> {
-                    set(
-                        id,
-                        ProjectState.Failed(
-                            RepoError.Network(
-                                "GitHub could not be reached to renew the credential: " +
-                                    "${problem.reason}.",
-                            ),
+                    failed(
+                        clone,
+                        entries,
+                        RepoError.Network(
+                            "GitHub could not be reached to renew the credential: " +
+                                "${problem.reason}.",
                         ),
                     )
                     return
@@ -143,7 +212,7 @@ class ProjectRepository(
                 null -> held.token
             }
         }
-        val clone = config.cloneId
+
         val refreshed = withContext(dispatcher) {
             if (store.isCloned(clone)) {
                 store.refresh(clone, token)
@@ -152,18 +221,53 @@ class ProjectRepository(
             }
         }
         when (refreshed) {
-            is RepoResult.Failure -> set(id, ProjectState.Failed(refreshed.error))
+            is RepoResult.Failure -> failed(clone, entries, refreshed.error)
             is RepoResult.Success -> {
                 // The working copy may have been rewritten, so nothing parsed
                 // from the old content may be kept. Every entry on this clone
                 // is reading that same copy, so every one of them reloads.
-                entriesOn(clone).forEach { entry ->
+                entries.forEach { entry ->
                     caches.remove(entry.id)
-                    if (entry.id != id) set(entry.id, ProjectState.Loading)
                     loadInto(entry.id)
                 }
             }
         }
+    }
+
+    /**
+     * Fetching and resetting leaves the working copy untouched when the fetch
+     * is what failed, so an entry that holds an index keeps it and the reason
+     * is reported separately. An entry with nothing to show says why.
+     */
+    private fun failed(clone: String, entries: List<RepoConfig>, error: RepoError) {
+        _outcomes.update { it + (clone to error) }
+        entries.forEach { entry ->
+            if (stateOf(entry.id) !is ProjectState.Loaded) {
+                set(entry.id, ProjectState.Failed(error))
+            }
+        }
+    }
+
+    /** Whether this entry's working copy is being fetched. */
+    fun refreshingOf(id: String): Flow<Boolean> =
+        combine(catalog.repos, _refreshing) { list, clones ->
+            val clone = list.repos.firstOrNull { it.id == id }?.cloneId
+            clone != null && clone in clones
+        }
+
+    /** Why the last refresh of this entry's working copy failed, or null. */
+    fun outcomeOf(id: String): Flow<RepoError?> =
+        combine(catalog.repos, _outcomes) { list, errors ->
+            list.repos.firstOrNull { it.id == id }?.cloneId?.let { errors[it] }
+        }
+
+    suspend fun clearOutcome(id: String) {
+        val clone = catalog.current().repos.firstOrNull { it.id == id }?.cloneId ?: return
+        clearOutcomeOf(clone)
+    }
+
+    fun clearOutcomeOf(cloneId: String) {
+        _outcomes.update { it - cloneId }
     }
 
     private suspend fun entriesOn(cloneId: String): List<RepoConfig> =

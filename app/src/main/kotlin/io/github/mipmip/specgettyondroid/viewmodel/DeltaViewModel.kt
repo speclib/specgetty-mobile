@@ -49,6 +49,13 @@ class DeltaViewModel(
     private val _view = MutableStateFlow(ComparisonView.DIFFERENCE)
     val view: StateFlow<ComparisonView> = _view.asStateFlow()
 
+    private val _selectionGone = MutableStateFlow(false)
+
+    /** The open card is for a requirement the change no longer touches. */
+    val selectionGone: StateFlow<Boolean> = _selectionGone.asStateFlow()
+
+    val refresh = RefreshControl(repository, repoId, scope)
+
     private var change: ChangeInfo? = null
     private var project: ProjectInfo? = null
 
@@ -62,7 +69,24 @@ class DeltaViewModel(
                         .firstOrNull { it.dir.name == changeDirName }
                 }
                 _sections.value = read()
+                reconcileSelection()
             }
+        }
+    }
+
+    /**
+     * Finds the open card's node in the outline as it is now, the way the spec
+     * screen does: a rewritten delta is followed by path, and a requirement the
+     * refresh removed is said rather than shown.
+     */
+    private fun reconcileSelection() {
+        val current = _selected.value ?: return
+        val match = _sections.value.flatMap { it.nodes }.firstOrNull { it.path == current.path }
+        if (match == null) {
+            _selectionGone.value = true
+        } else {
+            _selectionGone.value = false
+            _selected.value = match
         }
     }
 
@@ -81,6 +105,7 @@ class DeltaViewModel(
 
     fun select(node: SpecNode) {
         _selected.value = node
+        _selectionGone.value = false
         // A comparison always opens on the difference, which is what the reader
         // came for; the two sides are one tap away.
         _view.value = ComparisonView.DIFFERENCE
@@ -88,6 +113,7 @@ class DeltaViewModel(
 
     fun clearSelection() {
         _selected.value = null
+        _selectionGone.value = false
     }
 
     fun showView(view: ComparisonView) {

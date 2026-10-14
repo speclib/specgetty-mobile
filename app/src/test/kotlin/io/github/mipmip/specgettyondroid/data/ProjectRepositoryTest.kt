@@ -7,6 +7,8 @@ import io.github.mipmip.specgettyondroid.store.FakeVault
 import io.github.mipmip.specgettyondroid.store.InMemoryPreferences
 import io.github.mipmip.specgettyondroid.store.RepoRegistry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -107,19 +109,118 @@ class ProjectRepositoryTest {
         assertEquals(2, repository.stateOf(config.id).indexOrNull?.counts?.specs)
     }
 
+    /**
+     * Fetching and resetting leaves the working copy alone when the fetch is
+     * what failed, so there is nothing to take away from the reader.
+     */
     @Test
-    fun `a refresh that fails leaves a failure rather than a stale index`() = runTest {
+    fun `a refresh that fails keeps the project it already had`() = runTest {
         val r = remote()
         val config = repository.add(r.url)
-        assertTrue(repository.stateOf(config.id) is ProjectState.Loaded)
+        val before = repository.stateOf(config.id)
+        assertTrue(before is ProjectState.Loaded)
 
         // Destroy the remote so the fetch cannot succeed.
         File(r.url.removePrefix("file:")).deleteRecursively()
         repository.refresh(config.id)
 
         val state = repository.stateOf(config.id)
-        assertFalse("$state", state is ProjectState.Loaded)
+        assertTrue("$state", state is ProjectState.Loaded)
+        assertEquals(before.indexOrNull?.counts, state.indexOrNull?.counts)
+        // The reason is on the refresh, not on the state, which still has a
+        // perfectly readable project on it.
+        assertTrue(repository.outcomes.value.containsKey(config.cloneId))
+        assertEquals(null, state.errorOrNull)
+    }
+
+    @Test
+    fun `a refresh that fails with nothing loaded says why on the state`() = runTest {
+        val config = repository.add("https://no-such-host.invalid/a/b.git")
+        assertTrue(repository.stateOf(config.id) is ProjectState.Failed)
+
+        repository.refresh(config.id)
+
+        val state = repository.stateOf(config.id)
         assertTrue("$state", state is ProjectState.Failed)
+        assertTrue(state.errorOrNull is RepoError.Network)
+    }
+
+    @Test
+    fun `a loaded repository never leaves the loaded state across a refresh`() = runTest {
+        val r = remote()
+        val config = repository.add(r.url)
+
+        val seen = mutableListOf<ProjectState>()
+        val watching = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.states.collect { states -> states[config.id]?.let { seen += it } }
+        }
+
+        r.commit("openspec/specs/later/spec.md", LocalRemote.spec("later"), "later")
+        repository.refresh(config.id)
+        watching.cancel()
+
+        assertTrue("$seen", seen.isNotEmpty())
+        assertTrue("$seen", seen.all { it is ProjectState.Loaded })
+    }
+
+    @Test
+    fun `a refresh clears the reason the last one failed`() = runTest {
+        val r = remote()
+        val config = repository.add(r.url)
+        val dir = File(r.url.removePrefix("file:"))
+        val keep = temp.newFolder("keep")
+        dir.copyRecursively(keep, overwrite = true)
+
+        dir.deleteRecursively()
+        repository.refresh(config.id)
+        assertTrue(repository.outcomes.value.containsKey(config.cloneId))
+
+        keep.copyRecursively(dir, overwrite = true)
+        repository.refresh(config.id)
+        assertFalse(repository.outcomes.value.containsKey(config.cloneId))
+    }
+
+    @Test
+    fun `nothing is being refreshed once a refresh has landed`() = runTest {
+        val config = repository.add(remote().url)
+        repository.refresh(config.id)
+        assertTrue(repository.refreshing.value.isEmpty())
+    }
+
+    /**
+     * The work belongs to the repository, not to whoever waited for it. A
+     * reader who asks for a fetch and taps back has not withdrawn the request.
+     */
+    @Test
+    fun `a refresh runs on after the caller waiting for it goes away`() = runTest {
+        val r = remote()
+        val config = repository.add(r.url)
+        r.commit("openspec/specs/later/spec.md", LocalRemote.spec("later"), "later")
+
+        val caller = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.refresh(config.id)
+        }
+        caller.cancel()
+
+        // Asking again joins the one already in flight rather than starting a
+        // second, and returns when that one is done.
+        repository.refresh(config.id)
+        assertEquals(2, repository.stateOf(config.id).indexOrNull?.counts?.specs)
+    }
+
+    @Test
+    fun `two entries on one working copy share a single refresh`() = runTest {
+        val r = remote()
+        r.commit("second/openspec/config.yaml", "schema: spec-driven\n", "a second project")
+        val first = repository.add(r.url, path = "")
+        val second = repository.add(r.url, path = "second")
+        assertEquals(first.cloneId, second.cloneId)
+
+        r.commit("openspec/specs/later/spec.md", LocalRemote.spec("later"), "later")
+        repository.refresh(first.id)
+
+        assertEquals(2, repository.stateOf(first.id).indexOrNull?.counts?.specs)
+        assertTrue(repository.stateOf(second.id) is ProjectState.Loaded)
     }
 
     @Test

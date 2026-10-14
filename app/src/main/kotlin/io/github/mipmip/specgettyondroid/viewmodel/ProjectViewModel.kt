@@ -10,7 +10,7 @@ import io.github.mipmip.specgettyondroid.index.MatchKind
 import io.github.mipmip.specgettyondroid.index.ProjectIndex
 import io.github.mipmip.specgettyondroid.index.Query
 import io.github.mipmip.specgettyondroid.index.SearchResult
-import io.github.mipmip.specgettyondroid.repo.RepoError
+import io.github.mipmip.specgettyondroid.repo.explanation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +60,8 @@ class ProjectViewModel(
     private val _state = MutableStateFlow<ProjectState>(ProjectState.Absent)
     val state: StateFlow<ProjectState> = _state.asStateFlow()
 
+    val refresh = RefreshControl(repository, repoId, scope)
+
     val index: ProjectIndex? get() = (_state.value as? ProjectState.Loaded)?.index
 
     /** The reason there is nothing to show, or null when there is. */
@@ -69,18 +71,7 @@ class ProjectViewModel(
             is ProjectState.Loading -> "Loading"
             is ProjectState.Absent -> "Not loaded yet"
             is ProjectState.NoProject -> "No OpenSpec project here"
-            is ProjectState.Failed -> when (val e = s.error) {
-                is RepoError.Authentication -> "Authentication failed. Check the access token."
-                is RepoError.Network -> "The repository could not be reached."
-                is RepoError.NoOpenSpecProject -> "No OpenSpec project here"
-                is RepoError.NoAccessToRepository ->
-                    "The authorization does not cover this repository. " +
-                        "Choose it on GitHub, or use an access token."
-
-                is RepoError.PointsElsewhere -> e.message
-
-                is RepoError.Unknown -> e.message
-            }
+            is ProjectState.Failed -> s.error.explanation
         }
 
     init {

@@ -23,21 +23,27 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.mipmip.specgettyondroid.data.indexOrNull
 import io.github.mipmip.specgettyondroid.index.ChangeMatch
 import io.github.mipmip.specgettyondroid.index.MatchKind
+import io.github.mipmip.specgettyondroid.index.ProjectIndex
 import io.github.mipmip.specgettyondroid.project.ChangeInfo
 import io.github.mipmip.specgettyondroid.ui.MarkdownText
+import io.github.mipmip.specgettyondroid.ui.PullableColumn
+import io.github.mipmip.specgettyondroid.ui.Refreshable
 import io.github.mipmip.specgettyondroid.viewmodel.ProjectTab
 import io.github.mipmip.specgettyondroid.viewmodel.Properties
 import io.github.mipmip.specgettyondroid.viewmodel.ProjectViewModel
@@ -50,10 +56,16 @@ fun ProjectScreen(
     onBack: () -> Unit,
     onOpenChange: (ChangeInfo) -> Unit,
     onOpenSpec: (String) -> Unit,
+    onAuthorize: (() -> Unit)? = null,
 ) {
     val tab by viewModel.tab.collectAsStateWithLifecycle()
+    // Read from the collected state, not from the view model's own getter. A
+    // refresh lands while this screen is composed, and a plain getter is not a
+    // snapshot read, so nothing would redraw.
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val counts = viewModel.index?.counts
+    val index = state.indexOrNull
+    val counts = index?.counts
+    val host = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -84,27 +96,38 @@ fun ProjectScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(host) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            val message = viewModel.message
-            if (message != null) {
-                Column(
-                    Modifier.fillMaxSize().padding(32.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(message, style = MaterialTheme.typography.titleMedium)
+        Refreshable(
+            control = viewModel.refresh,
+            host = host,
+            onAuthorize = onAuthorize,
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                val message = viewModel.message
+                if (message != null) {
+                    // Pullable, because a project that is not here is the one a
+                    // reader most wants to fetch again.
+                    PullableColumn {
+                        Text(message, style = MaterialTheme.typography.titleMedium)
+                    }
+                    return@Column
                 }
-                return@Column
-            }
 
-            ProjectTabs(selected = tab, onSelect = viewModel::selectTab)
+                ProjectTabs(selected = tab, onSelect = viewModel::selectTab)
 
-            when (tab) {
-                ProjectTab.OVERVIEW -> OverviewTab(viewModel, onOpenChange)
-                ProjectTab.CHANGES -> ChangesTab(viewModel, onOpenChange)
-                ProjectTab.SPECS -> SpecsTab(viewModel, onOpenSpec)
-                ProjectTab.PROPERTIES -> PropertiesTab(viewModel)
+                // The index is passed in rather than read inside, so that a
+                // tab is recomposed when a refresh replaces it.
+                when (tab) {
+                    ProjectTab.OVERVIEW -> OverviewTab(index, onOpenChange)
+                    ProjectTab.CHANGES -> ChangesTab(viewModel, onOpenChange)
+                    ProjectTab.SPECS -> SpecsTab(index, onOpenSpec)
+                    ProjectTab.PROPERTIES -> PropertiesTab(
+                        properties = viewModel.properties,
+                        schemas = viewModel.schemasInUse,
+                    )
+                }
             }
         }
     }
@@ -133,8 +156,8 @@ internal fun ProjectTabs(selected: ProjectTab, onSelect: (ProjectTab) -> Unit) {
 }
 
 @Composable
-private fun OverviewTab(viewModel: ProjectViewModel, onOpenChange: (ChangeInfo) -> Unit) {
-    val index = viewModel.index ?: return
+private fun OverviewTab(index: ProjectIndex?, onOpenChange: (ChangeInfo) -> Unit) {
+    index ?: return
     val active = index.activeChanges
     val archived = index.archivedChanges.take(10)
 
@@ -143,7 +166,11 @@ private fun OverviewTab(viewModel: ProjectViewModel, onOpenChange: (ChangeInfo) 
         return
     }
 
-    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         item { SectionHeading("Active changes") }
         if (active.isEmpty()) {
             item { Text("Nothing is being worked on.", style = MaterialTheme.typography.bodyMedium) }
@@ -205,6 +232,7 @@ private fun ChangesTab(viewModel: ProjectViewModel, onOpenChange: (ChangeInfo) -
         }
 
         LazyColumn(
+            Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -240,13 +268,13 @@ private fun MatcherChip(
 }
 
 @Composable
-private fun SpecsTab(viewModel: ProjectViewModel, onOpenSpec: (String) -> Unit) {
-    val names = viewModel.index?.capabilityNames.orEmpty()
+private fun SpecsTab(index: ProjectIndex?, onOpenSpec: (String) -> Unit) {
+    val names = index?.capabilityNames.orEmpty()
     if (names.isEmpty()) {
         Empty("This project has no specs yet.")
         return
     }
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         items(names, key = { it }) { name ->
             Column(
                 Modifier.fillMaxWidth().clickable { onOpenSpec(name) }.padding(vertical = 12.dp),
@@ -259,10 +287,7 @@ private fun SpecsTab(viewModel: ProjectViewModel, onOpenSpec: (String) -> Unit) 
 }
 
 @Composable
-private fun PropertiesTab(viewModel: ProjectViewModel) {
-    val properties = viewModel.properties
-    val schemas = viewModel.schemasInUse
-
+private fun PropertiesTab(properties: Properties, schemas: List<String>) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -358,11 +383,7 @@ private fun SectionHeading(text: String) {
 
 @Composable
 private fun Empty(message: String) {
-    Column(
-        Modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    PullableColumn {
         Text(message, style = MaterialTheme.typography.bodyLarge)
     }
 }

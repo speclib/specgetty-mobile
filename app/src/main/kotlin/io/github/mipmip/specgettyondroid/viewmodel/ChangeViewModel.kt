@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 
 /** One tab of the change screen. */
 sealed interface ChangeTab {
@@ -55,8 +56,20 @@ class ChangeViewModel(
     private val _tab = MutableStateFlow<ChangeTab?>(null)
     val tab: StateFlow<ChangeTab?> = _tab.asStateFlow()
 
-    /** Read as tabs are opened, so a long design document costs nothing until looked at. */
-    private val artifacts = mutableMapOf<String, ArtifactContent>()
+    val refresh = RefreshControl(repository, repoId, scope)
+
+    /**
+     * Read as tabs are opened, so a long design document costs nothing until
+     * looked at, and keyed by what the file was when it was read, so a refresh
+     * that rewrote it is read again and one that left it alone is not.
+     */
+    private data class ArtifactKey(val path: String, val length: Long, val modified: Long)
+
+    private val artifacts = mutableMapOf<ArtifactKey, ArtifactContent>()
+
+    /** How many times a file has been read, so a test can see the keying work. */
+    var reads: Int = 0
+        private set
 
     init {
         scope.launch {
@@ -67,7 +80,11 @@ class ChangeViewModel(
                         .firstOrNull { it.dir.name == changeDirName }
                 }
                 _change.value = found
-                if (_tab.value == null) _tab.value = tabs.firstOrNull()
+                // A refresh can take the open tab's file away, or add one. The
+                // tab follows what the change holds now rather than what it
+                // held when it was opened.
+                val available = tabs
+                _tab.value = _tab.value?.takeIf { it in available } ?: available.firstOrNull()
             }
         }
     }
@@ -92,14 +109,23 @@ class ChangeViewModel(
         _tab.value = tab
     }
 
-    fun artifact(fileName: String): ArtifactContent = artifacts.getOrPut(fileName) {
-        val file = _change.value?.artifacts?.firstOrNull { it.name == fileName }?.file
-            ?: return@getOrPut ArtifactContent.Unreadable("$fileName is not in this change.")
-        runCatching { file.readText() }
+    fun artifact(fileName: String): ArtifactContent {
+        val file: File = _change.value?.artifacts?.firstOrNull { it.name == fileName }?.file
+            ?: return ArtifactContent.Unreadable("$fileName is not in this change.")
+        val key = ArtifactKey(file.path, file.length(), file.lastModified())
+        artifacts[key]?.let { return it }
+
+        val content = runCatching { file.readText() }
             .fold(
                 onSuccess = { ArtifactContent.Markdown(it) },
                 onFailure = { ArtifactContent.Unreadable("$fileName could not be read.") },
             )
+        reads++
+        // One entry per file, not one per version of it: the text a refresh
+        // replaced will never be asked for again.
+        artifacts.keys.removeAll { it.path == key.path }
+        artifacts[key] = content
+        return content
     }
 
     val tasks: TaskList

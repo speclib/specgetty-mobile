@@ -30,12 +30,15 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -46,6 +49,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mipmip.specgettyondroid.index.ProjectCounts
+import io.github.mipmip.specgettyondroid.ui.ReportFailure
 import io.github.mipmip.specgettyondroid.viewmodel.ProjectChoice
 import io.github.mipmip.specgettyondroid.viewmodel.RepoListViewModel
 import io.github.mipmip.specgettyondroid.viewmodel.RepoRow
@@ -60,12 +64,25 @@ fun RepoListScreen(
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
     val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
+    val failure by viewModel.failure.collectAsStateWithLifecycle()
+    val host = remember { SnackbarHostState() }
     val formOpen by viewModel.formOpen.collectAsStateWithLifecycle()
     val pendingRemoval by viewModel.pendingRemoval.collectAsStateWithLifecycle()
     val choice by viewModel.choice.collectAsStateWithLifecycle()
 
+    ReportFailure(
+        failure = failure?.error,
+        host = host,
+        onShown = { failure?.let { viewModel.failureShown(it.cloneId) } },
+        onTryAgain = viewModel::refreshAll,
+        // The repository the failed refresh was for, not whichever is first.
+        onAuthorize = rows.firstOrNull { it.config.cloneId == failure?.cloneId }
+            ?.let { row -> { onAuthorize(row.config.url) } },
+    )
+
     Scaffold(
         topBar = { TopAppBar(title = { Text("Specgetty on Droid") }) },
+        snackbarHost = { SnackbarHost(host) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.openForm() },
@@ -203,6 +220,19 @@ private fun RepoCard(
             )
 
             row.counts?.let { Statistics(it) }
+
+            // A row showing a project keeps showing it through a refresh, so
+            // this is the only thing that says the fetch is happening, whether
+            // it was asked for here or from a screen deeper in.
+            if (row.isRefreshing && row.message == null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    CircularProgressIndicator(Modifier.padding(2.dp))
+                    Text("Refreshing", style = MaterialTheme.typography.bodySmall)
+                }
+            }
 
             row.message?.let { message ->
                 Row(

@@ -7,8 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Pull to refresh wherever you are reading. The project view, a change, a spec
+  and a delta each fetch the repository they are showing, so getting the latest
+  no longer means walking back to the repository list and finding your place
+  again.
+
 ### Fixed
 
+- A refresh no longer takes the project away while it runs. What you are
+  reading stays on screen, keeps its tab and your place in it, and a refresh
+  that cannot reach the repository says so without replacing what you had: the
+  working copy was never touched, so there was nothing to take away.
+- A fetch is no longer abandoned when you leave the screen that asked for it.
+- A pull now answers anywhere on a screen. A list shorter than the window left
+  dead space below it that did nothing.
+- An artifact already opened in a change is read again when a refresh rewrites
+  it, instead of showing the text it had when it was opened.
 - The stated licence. The repository has carried an Apache 2.0 `LICENSE` since
   it was created, while the README, the briefing and the F-Droid audit all said
   MIT. The files now say what the licence file says.

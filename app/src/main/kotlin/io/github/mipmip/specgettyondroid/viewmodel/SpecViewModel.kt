@@ -45,6 +45,16 @@ class SpecViewModel(
     private val _selected = MutableStateFlow<SpecNode?>(null)
     val selected: StateFlow<SpecNode?> = _selected.asStateFlow()
 
+    private val _selectionGone = MutableStateFlow(false)
+
+    /**
+     * The open card is for a node the spec no longer holds. Said rather than
+     * shown: the text on screen would otherwise be text no longer in the file.
+     */
+    val selectionGone: StateFlow<Boolean> = _selectionGone.asStateFlow()
+
+    val refresh = RefreshControl(repository, repoId, scope)
+
     /** The whole file, so a spec that does not fit is still readable as Markdown. */
     private val _rawText = MutableStateFlow("")
     val rawText: StateFlow<String> = _rawText.asStateFlow()
@@ -60,7 +70,25 @@ class SpecViewModel(
                     ?.firstOrNull { it.name == capability }
                     ?.specFile
                 _state.value = load(file)
+                reconcileSelection()
             }
+        }
+    }
+
+    /**
+     * Finds the open card's node in the outline as it is now. A refresh may
+     * have rewritten the spec, in which case the node at the same path is the
+     * one to show, or removed the node, in which case there is nothing to show
+     * and saying so is the only honest answer.
+     */
+    private fun reconcileSelection() {
+        val current = _selected.value ?: return
+        val match = nodes.firstOrNull { it.path == current.path }
+        if (match == null) {
+            _selectionGone.value = true
+        } else {
+            _selectionGone.value = false
+            _selected.value = match
         }
     }
 
@@ -82,10 +110,12 @@ class SpecViewModel(
 
     fun select(node: SpecNode) {
         _selected.value = node
+        _selectionGone.value = false
     }
 
     fun clearSelection() {
         _selected.value = null
+        _selectionGone.value = false
     }
 
     /** The outline's own order, or empty when the file is not a spec. */

@@ -22,10 +22,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mipmip.specgettyondroid.spec.DiffMark
 import io.github.mipmip.specgettyondroid.ui.ListDetail
+import io.github.mipmip.specgettyondroid.ui.PullableColumn
+import io.github.mipmip.specgettyondroid.ui.Refreshable
 import io.github.mipmip.specgettyondroid.spec.NodeKind
 import io.github.mipmip.specgettyondroid.spec.PartKind
 import io.github.mipmip.specgettyondroid.spec.SpecNode
@@ -43,9 +48,15 @@ import io.github.mipmip.specgettyondroid.viewmodel.DeltaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeltaScreen(viewModel: DeltaViewModel, onBack: () -> Unit) {
+fun DeltaScreen(
+    viewModel: DeltaViewModel,
+    onBack: () -> Unit,
+    onAuthorize: (() -> Unit)? = null,
+) {
     val sections by viewModel.sections.collectAsStateWithLifecycle()
     val selected by viewModel.selected.collectAsStateWithLifecycle()
+    val selectionGone by viewModel.selectionGone.collectAsStateWithLifecycle()
+    val host = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -66,22 +77,37 @@ fun DeltaScreen(viewModel: DeltaViewModel, onBack: () -> Unit) {
                 },
             )
         },
+        snackbarHost = { SnackbarHost(host) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            ListDetail(
-                hasSelection = selected != null,
-                onClearSelection = viewModel::clearSelection,
-                onLeave = onBack,
-                emptyDetailMessage = "Choose a requirement or a scenario from the outline.",
-                list = {
-                    if (sections.isEmpty()) {
-                        CentredMessage("This change touches no capability.")
-                    } else {
-                        Outline(viewModel, sections)
-                    }
-                },
-                detail = { selected?.let { NodeCard(viewModel, it) } },
-            )
+        Refreshable(
+            control = viewModel.refresh,
+            host = host,
+            onAuthorize = onAuthorize,
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                ListDetail(
+                    hasSelection = selected != null,
+                    onClearSelection = viewModel::clearSelection,
+                    onLeave = onBack,
+                    emptyDetailMessage = "Choose a requirement or a scenario from the outline.",
+                    list = {
+                        if (sections.isEmpty()) {
+                            CentredMessage("This change touches no capability.")
+                        } else {
+                            Outline(viewModel, sections)
+                        }
+                    },
+                    detail = {
+                        when {
+                            selectionGone ->
+                                CentredMessage("This requirement is no longer in the change.")
+
+                            else -> selected?.let { NodeCard(viewModel, it) }
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -91,7 +117,7 @@ private fun Outline(
     viewModel: DeltaViewModel,
     sections: List<io.github.mipmip.specgettyondroid.viewmodel.DeltaSection>,
 ) {
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         sections.forEach { section ->
             item(key = "cap-${section.capability}") {
                 Text(
@@ -270,11 +296,7 @@ private fun SourceBody(text: String) {
 
 @Composable
 private fun CentredMessage(message: String) {
-    Column(
-        Modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    PullableColumn {
         Text(message, style = MaterialTheme.typography.bodyLarge)
     }
 }

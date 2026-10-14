@@ -39,6 +39,17 @@ fun SpecgettyNavHost(
 ) {
     val navController = rememberNavController()
 
+    // Collected once rather than per screen: four of them need a repository's
+    // URL only to offer authorizing it after a refresh was refused.
+    val repos by projects.repos.collectAsStateWithLifecycle(
+        initialValue = io.github.mipmip.specgettyondroid.store.RepoList(),
+    )
+
+    fun authorizing(repoId: String): (() -> Unit)? =
+        repos.repos.firstOrNull { it.id == repoId }?.let { config ->
+            { navController.navigate(Destinations.authorize(config.url)) }
+        }
+
     NavHost(navController = navController, startDestination = Destinations.REPO_LIST) {
         composable(Destinations.REPO_LIST) {
             val model: RepoListViewModel =
@@ -118,9 +129,6 @@ fun SpecgettyNavHost(
             val model: ProjectViewModel =
                 viewModel(factory = ProjectViewModel.factory(projects, repoId))
 
-            val repos by projects.repos.collectAsStateWithLifecycle(
-                initialValue = io.github.mipmip.specgettyondroid.store.RepoList(),
-            )
             val label = repos.repos.firstOrNull { it.id == repoId }?.label ?: "Project"
 
             ProjectScreen(
@@ -129,6 +137,7 @@ fun SpecgettyNavHost(
                 onBack = { navController.popBackStack() },
                 onOpenChange = { navController.navigate(Destinations.change(repoId, it.dir.name)) },
                 onOpenSpec = { navController.navigate(Destinations.spec(repoId, it)) },
+                onAuthorize = authorizing(repoId),
             )
         }
 
@@ -151,6 +160,7 @@ fun SpecgettyNavHost(
                 viewModel = model,
                 onBack = { navController.popBackStack() },
                 onOpenDelta = { navController.navigate(Destinations.delta(repoId, name)) },
+                onAuthorize = authorizing(repoId),
             )
         }
 
@@ -169,7 +179,11 @@ fun SpecgettyNavHost(
             )
             val model: DeltaViewModel =
                 viewModel(factory = DeltaViewModel.factory(projects, repoId, name))
-            DeltaScreen(viewModel = model, onBack = { navController.popBackStack() })
+            DeltaScreen(
+                viewModel = model,
+                onBack = { navController.popBackStack() },
+                onAuthorize = authorizing(repoId),
+            )
         }
 
         composable(
@@ -187,7 +201,11 @@ fun SpecgettyNavHost(
             )
             val model: SpecViewModel =
                 viewModel(factory = SpecViewModel.factory(projects, repoId, capability))
-            SpecScreen(viewModel = model, onBack = { navController.popBackStack() })
+            SpecScreen(
+                viewModel = model,
+                onBack = { navController.popBackStack() },
+                onAuthorize = authorizing(repoId),
+            )
         }
     }
 }
